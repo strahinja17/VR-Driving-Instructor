@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Created by https://www.toptal.com/developers/gitignore/api/macos,unity
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,unity
 
@@ -108,3 +109,26 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,unity
+=======
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+MemoryCaptures/
+SysInfo/
+sysinfo.txt
+*.log
+
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.user
+*.pidb
+*.suo
+*.booproj
+*.unityproj
+>>>>>>> 41e3b6e (Initial commit: Unity VR Core project with LFS + .gitignore)

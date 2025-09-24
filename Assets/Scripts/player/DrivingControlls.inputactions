@@ -1,0 +1,95 @@
+{
+    "version": 1,
+    "name": "DrivingControlls",
+    "maps": [
+        {
+            "name": "Driving",
+            "id": "89150433-90bc-45ba-a3dd-2cb495ca438a",
+            "actions": [
+                {
+                    "name": "Steer",
+                    "type": "Value",
+                    "id": "eda5a457-aabf-49bb-a44a-794d1ab53a27",
+                    "expectedControlType": "Axis",
+                    "processors": "AxisDeadzone",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Throttle",
+                    "type": "Value",
+                    "id": "405b4d01-c42d-4483-8bfb-cf408feacc8c",
+                    "expectedControlType": "Axis",
+                    "processors": "AxisDeadzone",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Brake",
+                    "type": "Value",
+                    "id": "e9fb08f7-a222-4808-83c5-452bf12e7823",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "ReverseButton",
+                    "type": "Button",
+                    "id": "9c421027-1f92-48e8-bf04-8182642ba80b",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "e5506491-8f30-40cd-a293-8c08149c0afc",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Steer",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e79ff653-7b91-4458-a9ef-988320333eb8",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/rz",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Throttle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "148db402-9961-47f9-a641-d1f74a9961ad",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/down",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Brake",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9b9942ab-e217-4fd1-bfbd-4ece0e98d490",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/button9",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ReverseButton",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

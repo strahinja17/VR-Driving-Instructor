@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "XR Device Simulator Controls",
     "maps": [
         {
@@ -570,6 +571,74 @@
                     "processors": "",
                     "groups": "",
                     "action": "Hand-Controller Mode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Driving",
+            "id": "b29fdbb0-8634-4130-8233-c1219ae98535",
+            "actions": [
+                {
+                    "name": "Steer",
+                    "type": "Value",
+                    "id": "2a239e9d-a687-4f44-990e-c13047a834ee",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Throttle",
+                    "type": "Value",
+                    "id": "8a67de2b-3f57-47bd-8ee9-2a4e4c207465",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Brake",
+                    "type": "Button",
+                    "id": "b6bd10a0-b171-474d-b643-4891a090bcea",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "2964d62f-3a03-4457-acf0-c9836b3b7e8b",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Steer",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "01e7e14f-30ec-4c5c-a391-42b0e57ae314",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/rz",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Throttle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "33c59003-b4fd-4285-b865-9893175d336a",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/down",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Brake",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

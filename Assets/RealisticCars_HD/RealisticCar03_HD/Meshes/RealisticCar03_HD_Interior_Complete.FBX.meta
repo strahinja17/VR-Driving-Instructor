@@ -1,0 +1,185 @@
+fileFormatVersion: 2
+guid: 786a9c620dfc13242894b1039d08f93b
+timeCreated: 1520456871
+licenseType: Free
+ModelImporter:
+  serializedVersion: 19
+  fileIDToRecycleName:
+    100000: Car03_Interior
+    100002: Car03_Interior_Door_Left_LOD0
+    100004: Car03_Interior_Door_Left_LOD1
+    100006: Car03_Interior_Door_Left_LOD2
+    100008: Car03_Interior_Door_Right_LOD0
+    100010: Car03_Interior_Door_Right_LOD1
+    100012: Car03_Interior_Door_Right_LOD2
+    100014: Car03_Interior_Glass_LOD0
+    100016: Car03_Interior_Glass_LOD1
+    100018: Car03_Interior_LOD0
+    100020: Car03_Interior_LOD1
+    100022: Car03_Interior_LOD2
+    100024: Car03_Interior_LOD3
+    100026: Car03_Interior_rpmPointer
+    100028: Car03_Interior_rpmPointer_LOD0
+    100030: Car03_Interior_rpmPointer_LOD1
+    100032: Car03_Interior_SpeedPointer
+    100034: Car03_Interior_SpeedPointer_LOD0
+    100036: Car03_Interior_SpeedPointer_LOD1
+    100038: Car03_Interior_SteeringWheel
+    100040: Car03_Interior_SteeringWheel_LOD0
+    100042: Car03_Interior_SteeringWheel_LOD1
+    100044: Car03_Interior_SteeringWheel_LOD2
+    100046: //RootNode
+    400000: Car03_Interior
+    400002: Car03_Interior_Door_Left_LOD0
+    400004: Car03_Interior_Door_Left_LOD1
+    400006: Car03_Interior_Door_Left_LOD2
+    400008: Car03_Interior_Door_Right_LOD0
+    400010: Car03_Interior_Door_Right_LOD1
+    400012: Car03_Interior_Door_Right_LOD2
+    400014: Car03_Interior_Glass_LOD0
+    400016: Car03_Interior_Glass_LOD1
+    400018: Car03_Interior_LOD0
+    400020: Car03_Interior_LOD1
+    400022: Car03_Interior_LOD2
+    400024: Car03_Interior_LOD3
+    400026: Car03_Interior_rpmPointer
+    400028: Car03_Interior_rpmPointer_LOD0
+    400030: Car03_Interior_rpmPointer_LOD1
+    400032: Car03_Interior_SpeedPointer
+    400034: Car03_Interior_SpeedPointer_LOD0
+    400036: Car03_Interior_SpeedPointer_LOD1
+    400038: Car03_Interior_SteeringWheel
+    400040: Car03_Interior_SteeringWheel_LOD0
+    400042: Car03_Interior_SteeringWheel_LOD1
+    400044: Car03_Interior_SteeringWheel_LOD2
+    400046: //RootNode
+    2300000: Car03_Interior_Door_Left_LOD0
+    2300002: Car03_Interior_Door_Left_LOD1
+    2300004: Car03_Interior_Door_Left_LOD2
+    2300006: Car03_Interior_Door_Right_LOD0
+    2300008: Car03_Interior_Door_Right_LOD1
+    2300010: Car03_Interior_Door_Right_LOD2
+    2300012: Car03_Interior_Glass_LOD0
+    2300014: Car03_Interior_Glass_LOD1
+    2300016: Car03_Interior_LOD0
+    2300018: Car03_Interior_LOD1
+    2300020: Car03_Interior_LOD2
+    2300022: Car03_Interior_LOD3
+    2300024: Car03_Interior_rpmPointer_LOD0
+    2300026: Car03_Interior_rpmPointer_LOD1
+    2300028: Car03_Interior_SpeedPointer_LOD0
+    2300030: Car03_Interior_SpeedPointer_LOD1
+    2300032: Car03_Interior_SteeringWheel_LOD0
+    2300034: Car03_Interior_SteeringWheel_LOD1
+    2300036: Car03_Interior_SteeringWheel_LOD2
+    3300000: Car03_Interior_Door_Left_LOD0
+    3300002: Car03_Interior_Door_Left_LOD1
+    3300004: Car03_Interior_Door_Left_LOD2
+    3300006: Car03_Interior_Door_Right_LOD0
+    3300008: Car03_Interior_Door_Right_LOD1
+    3300010: Car03_Interior_Door_Right_LOD2
+    3300012: Car03_Interior_Glass_LOD0
+    3300014: Car03_Interior_Glass_LOD1
+    3300016: Car03_Interior_LOD0
+    3300018: Car03_Interior_LOD1
+    3300020: Car03_Interior_LOD2
+    3300022: Car03_Interior_LOD3
+    3300024: Car03_Interior_rpmPointer_LOD0
+    3300026: Car03_Interior_rpmPointer_LOD1
+    3300028: Car03_Interior_SpeedPointer_LOD0
+    3300030: Car03_Interior_SpeedPointer_LOD1
+    3300032: Car03_Interior_SteeringWheel_LOD0
+    3300034: Car03_Interior_SteeringWheel_LOD1
+    3300036: Car03_Interior_SteeringWheel_LOD2
+    4300000: Car03_Interior_SteeringWheel_LOD2
+    4300002: Car03_Interior_SteeringWheel_LOD0
+    4300004: Car03_Interior_SteeringWheel_LOD1
+    4300006: Car03_Interior_rpmPointer_LOD0
+    4300008: Car03_Interior_rpmPointer_LOD1
+    4300010: Car03_Interior_SpeedPointer_LOD0
+    4300012: Car03_Interior_SpeedPointer_LOD1
+    4300014: Car03_Interior_LOD0
+    4300016: Car03_Interior_LOD1
+    4300018: Car03_Interior_LOD2
+    4300020: Car03_Interior_LOD3
+    4300022: Car03_Interior_Glass_LOD0
+    4300024: Car03_Interior_Glass_LOD1
+    4300026: Car03_Interior_Door_Left_LOD0
+    4300028: Car03_Interior_Door_Right_LOD2
+    4300030: Car03_Interior_Door_Right_LOD1
+    4300032: Car03_Interior_Door_Right_LOD0
+    4300034: Car03_Interior_Door_Left_LOD1
+    4300036: Car03_Interior_Door_Left_LOD2
+    20500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 1
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages:
+    - 0.25
+    - 0.125
+    - 0.0625
+    - 0.01
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 0
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -93,11 +93,11 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
             ""id"": ""89150433-90bc-45ba-a3dd-2cb495ca438a"",
             ""actions"": [
                 {
-                    ""name"": ""Steer"",
+                    ""name"": ""Steer_small"",
                     ""type"": ""Value"",
                     ""id"": ""eda5a457-aabf-49bb-a44a-794d1ab53a27"",
-                    ""expectedControlType"": ""Axis"",
-                    ""processors"": ""AxisDeadzone"",
+                    ""expectedControlType"": ""Stick"",
+                    ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
                 },
@@ -127,17 +127,26 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Steer_big"",
+                    ""type"": ""Value"",
+                    ""id"": ""14274ab5-6841-41a8-a21f-9e43ac4134a3"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
                 {
                     ""name"": """",
                     ""id"": ""e5506491-8f30-40cd-a293-8c08149c0afc"",
-                    ""path"": ""<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/x"",
+                    ""path"": ""<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Steer"",
+                    ""action"": ""Steer_small"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -155,7 +164,7 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""148db402-9961-47f9-a641-d1f74a9961ad"",
-                    ""path"": ""<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/down"",
+                    ""path"": ""<Joystick>/stick/down"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -173,6 +182,17 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                     ""action"": ""ReverseButton"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""5d8a5d04-ca3a-4ee0-9773-df20367c7175"",
+                    ""path"": ""<Joystick>/stick/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Steer_big"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -181,10 +201,11 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
 }");
         // Driving
         m_Driving = asset.FindActionMap("Driving", throwIfNotFound: true);
-        m_Driving_Steer = m_Driving.FindAction("Steer", throwIfNotFound: true);
+        m_Driving_Steer_small = m_Driving.FindAction("Steer_small", throwIfNotFound: true);
         m_Driving_Throttle = m_Driving.FindAction("Throttle", throwIfNotFound: true);
         m_Driving_Brake = m_Driving.FindAction("Brake", throwIfNotFound: true);
         m_Driving_ReverseButton = m_Driving.FindAction("ReverseButton", throwIfNotFound: true);
+        m_Driving_Steer_big = m_Driving.FindAction("Steer_big", throwIfNotFound: true);
     }
 
     ~@DrivingControlls()
@@ -265,10 +286,11 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
     // Driving
     private readonly InputActionMap m_Driving;
     private List<IDrivingActions> m_DrivingActionsCallbackInterfaces = new List<IDrivingActions>();
-    private readonly InputAction m_Driving_Steer;
+    private readonly InputAction m_Driving_Steer_small;
     private readonly InputAction m_Driving_Throttle;
     private readonly InputAction m_Driving_Brake;
     private readonly InputAction m_Driving_ReverseButton;
+    private readonly InputAction m_Driving_Steer_big;
     /// <summary>
     /// Provides access to input actions defined in input action map "Driving".
     /// </summary>
@@ -281,9 +303,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// </summary>
         public DrivingActions(@DrivingControlls wrapper) { m_Wrapper = wrapper; }
         /// <summary>
-        /// Provides access to the underlying input action "Driving/Steer".
+        /// Provides access to the underlying input action "Driving/Steer_small".
         /// </summary>
-        public InputAction @Steer => m_Wrapper.m_Driving_Steer;
+        public InputAction @Steer_small => m_Wrapper.m_Driving_Steer_small;
         /// <summary>
         /// Provides access to the underlying input action "Driving/Throttle".
         /// </summary>
@@ -296,6 +318,10 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Driving/ReverseButton".
         /// </summary>
         public InputAction @ReverseButton => m_Wrapper.m_Driving_ReverseButton;
+        /// <summary>
+        /// Provides access to the underlying input action "Driving/Steer_big".
+        /// </summary>
+        public InputAction @Steer_big => m_Wrapper.m_Driving_Steer_big;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -322,9 +348,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         {
             if (instance == null || m_Wrapper.m_DrivingActionsCallbackInterfaces.Contains(instance)) return;
             m_Wrapper.m_DrivingActionsCallbackInterfaces.Add(instance);
-            @Steer.started += instance.OnSteer;
-            @Steer.performed += instance.OnSteer;
-            @Steer.canceled += instance.OnSteer;
+            @Steer_small.started += instance.OnSteer_small;
+            @Steer_small.performed += instance.OnSteer_small;
+            @Steer_small.canceled += instance.OnSteer_small;
             @Throttle.started += instance.OnThrottle;
             @Throttle.performed += instance.OnThrottle;
             @Throttle.canceled += instance.OnThrottle;
@@ -334,6 +360,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
             @ReverseButton.started += instance.OnReverseButton;
             @ReverseButton.performed += instance.OnReverseButton;
             @ReverseButton.canceled += instance.OnReverseButton;
+            @Steer_big.started += instance.OnSteer_big;
+            @Steer_big.performed += instance.OnSteer_big;
+            @Steer_big.canceled += instance.OnSteer_big;
         }
 
         /// <summary>
@@ -345,9 +374,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// <seealso cref="DrivingActions" />
         private void UnregisterCallbacks(IDrivingActions instance)
         {
-            @Steer.started -= instance.OnSteer;
-            @Steer.performed -= instance.OnSteer;
-            @Steer.canceled -= instance.OnSteer;
+            @Steer_small.started -= instance.OnSteer_small;
+            @Steer_small.performed -= instance.OnSteer_small;
+            @Steer_small.canceled -= instance.OnSteer_small;
             @Throttle.started -= instance.OnThrottle;
             @Throttle.performed -= instance.OnThrottle;
             @Throttle.canceled -= instance.OnThrottle;
@@ -357,6 +386,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
             @ReverseButton.started -= instance.OnReverseButton;
             @ReverseButton.performed -= instance.OnReverseButton;
             @ReverseButton.canceled -= instance.OnReverseButton;
+            @Steer_big.started -= instance.OnSteer_big;
+            @Steer_big.performed -= instance.OnSteer_big;
+            @Steer_big.canceled -= instance.OnSteer_big;
         }
 
         /// <summary>
@@ -398,12 +430,12 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
     public interface IDrivingActions
     {
         /// <summary>
-        /// Method invoked when associated input action "Steer" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "Steer_small" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnSteer(InputAction.CallbackContext context);
+        void OnSteer_small(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Throttle" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
@@ -425,5 +457,12 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnReverseButton(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Steer_big" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSteer_big(InputAction.CallbackContext context);
     }
 }

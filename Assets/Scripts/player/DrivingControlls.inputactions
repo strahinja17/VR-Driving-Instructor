@@ -7,11 +7,11 @@
             "id": "89150433-90bc-45ba-a3dd-2cb495ca438a",
             "actions": [
                 {
-                    "name": "Steer",
+                    "name": "Steer_small",
                     "type": "Value",
                     "id": "eda5a457-aabf-49bb-a44a-794d1ab53a27",
-                    "expectedControlType": "Axis",
-                    "processors": "AxisDeadzone",
+                    "expectedControlType": "Stick",
+                    "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
                 },
@@ -41,17 +41,26 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Steer_big",
+                    "type": "Value",
+                    "id": "14274ab5-6841-41a8-a21f-9e43ac4134a3",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
                 {
                     "name": "",
                     "id": "e5506491-8f30-40cd-a293-8c08149c0afc",
-                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/x",
+                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Steer",
+                    "action": "Steer_small",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -69,7 +78,7 @@
                 {
                     "name": "",
                     "id": "148db402-9961-47f9-a641-d1f74a9961ad",
-                    "path": "<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick/down",
+                    "path": "<Joystick>/stick/down",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -85,6 +94,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "ReverseButton",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5d8a5d04-ca3a-4ee0-9773-df20367c7175",
+                    "path": "<Joystick>/stick/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Steer_big",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

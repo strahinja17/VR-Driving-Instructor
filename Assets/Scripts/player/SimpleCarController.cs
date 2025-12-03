@@ -35,10 +35,21 @@ public class SimpleCarController : MonoBehaviour
         isReversing = !isReversing;
     }
 
+    const float wheelMaxAbs = 0.69f;  // from your observation in Input Debugger
+
     void Update()
     {
         // Read input from DrivingControls
-        steerInput = drivingControls.Driving.Steer.ReadValue<float>();
+        // --- Steering from wheel (stick.x) ---
+        Vector2 steerVec = drivingControls.Driving.Steer_small.ReadValue<Vector2>();
+        float rawStickX = steerVec.x;          // this reacts instantly with small movements
+
+        // Normalize from [-0.69 .. +0.69] to [-1 .. +1]
+        float normalized = 0f;
+        if (Mathf.Abs(rawStickX) > 0.0001f)
+            normalized = Mathf.Clamp(rawStickX / wheelMaxAbs, -1f, 1f);
+
+        steerInput = normalized;
         float rawThrottle = drivingControls.Driving.Throttle.ReadValue<float>();
         accelInput = Mathf.InverseLerp(1f, -1f, rawThrottle); 
         brakeInput = Mathf.Abs(drivingControls.Driving.Brake.ReadValue<float>() - 1);

@@ -17,6 +17,8 @@ public class SimpleCarController : MonoBehaviour
     private Rigidbody rb;
     private DrivingControlls drivingControls;
 
+    private CarBlinkers blinkers;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -28,6 +30,8 @@ public class SimpleCarController : MonoBehaviour
 
         // Bind the ReverseButton action
         drivingControls.Driving.ReverseButton.performed += ctx => ToggleReverse();
+
+        blinkers = GetComponent<CarBlinkers>();
     }
 
     void ToggleReverse()
@@ -73,6 +77,17 @@ public class SimpleCarController : MonoBehaviour
 
                 brakeInput = keyboard.spaceKey.isPressed ? 1f : 0f;
             }
+
+            if (keyboard.qKey.isPressed)
+            {
+                blinkers.ToggleLeft();
+            }
+
+            if (keyboard.eKey.isPressed)
+            {
+                blinkers.ToggleRight();
+            }
+
         }
 
         Debug.Log("Brake Input: " + brakeInput);

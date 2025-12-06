@@ -17,8 +17,8 @@ public class CarBlinkers : MonoBehaviour
     public AudioSource blinkerSource; 
     public AudioClip blinkerLoop;      // long full blinker sound
 
-    private bool leftOn = false;
-    private bool rightOn = false;
+    public bool leftOn = false;
+    public bool rightOn = false;
 
     private float blinkTimer = 0f;
     private bool blinkState = false; // toggles ON/OFF

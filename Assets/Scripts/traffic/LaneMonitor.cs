@@ -53,21 +53,21 @@ public class LaneMonitor : MonoBehaviour
             }
             else
             {
-                // Entering an entry box from a different lane
-                if (inExitRegion)
-                {
-                    // We're exiting the old lane and entering a new one:
-                    // treat as lane handoff, NOT as wrong entry.
+                // // Entering an entry box from a different lane
+                // if (inExitRegion)
+                // {
+                //     // We're exiting the old lane and entering a new one:
+                //     // treat as lane handoff, NOT as wrong entry.
                     boundLane = zone.parentSpline;
                     inExitRegion = false;
                     Debug.Log("[LaneMonitor] Lane handoff at intersection. New bound lane: " + boundLane.name);
-                }
-                else
-                {
-                    // Not in exit region → this really is a wrong entry
-                    wrongLaneAtEntry = true;
-                    Debug.Log("[LaneMonitor] WRONG entry: entered lane " + zone.parentSpline.name);
-                }
+                // }
+                // else
+                // {
+                //     // Not in exit region → this really is a wrong entry
+                //     wrongLaneAtEntry = true;
+                //     Debug.Log("[LaneMonitor] WRONG entry: entered lane " + zone.parentSpline.name);
+                // }
             }
         }
         else
@@ -105,15 +105,47 @@ public class LaneMonitor : MonoBehaviour
 
         activeZones.Remove(zone);
 
+        // If this zone belongs to the current bound lane, check if we left it completely
+        if (boundLane != null && zone.parentSpline == boundLane)
+        {
+            bool stillInBoundLane = false;
+
+            foreach (var z in activeZones)
+            {
+                if (z.parentSpline == boundLane)
+                {
+                    stillInBoundLane = true;
+                    break;
+                }
+            }
+
+            // We've left the LAST zone of the bound lane
+            if (!stillInBoundLane)
+            {
+                // And we were exiting that lane (either via an exit zone or exit region)
+                if (zone.isExit || inExitRegion)
+                {
+                    Debug.Log("[LaneMonitor] Fully exited lane " + boundLane.name + " → unbinding.");
+                    boundLane = null;
+                    hasEnteredBoundLane = false;
+                    inExitRegion = false;
+                }
+            }
+        }
+
+        // Keep this so inExitRegion only applies while you're actually inside the exit box
         if (zone.isExit && zone.parentSpline == boundLane)
+        {
             inExitRegion = false;
+        }
     }
+
 
     void EvaluateZones()
     {
         HashSet<LaneSpline> overlapping = new HashSet<LaneSpline>();
         HashSet<LaneSpline> adjacentHits = new HashSet<LaneSpline>();
-        ZoneType situation = ZoneType.None;
+        // ZoneType situation = ZoneType.None;
 
         foreach (var zone in activeZones)
         {
@@ -127,13 +159,29 @@ public class LaneMonitor : MonoBehaviour
         // ---------------------------------------------------
         // (3) LANE EXCURSION — overlapping different lanes mid-segment
         // ---------------------------------------------------
-        laneExcursion = (overlapping.Count > 1 && !inExitRegion);
+        // If NOT bound yet and overlapping multiple lanes,
+        // choose the one that is NOT the wrongEntryLane.
+        if (!hasEnteredBoundLane && overlapping.Count > 1)
+        {
+            foreach (var lane in overlapping)
+            {
+                if (lane != wrongLaneAtEntry)
+                {
+                    boundLane = lane;
+                    hasEnteredBoundLane = true;
+                    wrongLaneAtEntry = false;
+                    Debug.Log("[LaneMonitor] Auto-bound to corrected lane: " + boundLane.name);
+                    break;
+                }
+            }
+        }
 
-        if (laneExcursion)
-            Debug.Log("[LaneMonitor] LANE EXCURSION!");
+        // Now re-evaluate excursion only AFTER binding
+        laneExcursion = (hasEnteredBoundLane && overlapping.Count > 1 && !inExitRegion);
 
         // 3) ADJACENT LANE LOGIC — lane change detection
         improperLaneChange = false;
+        bool properLaneChange = false;
 
         foreach (var zone in activeZones)
         {
@@ -159,13 +207,18 @@ public class LaneMonitor : MonoBehaviour
                 {
                     // Determine required blinker
                     bool requiredBlinker = zone.isLeftSideAdjacency ?
-                                        (blinker && blinker.leftOn) :
-                                        (blinker && blinker.rightOn);
+                                        (blinker && blinker.rightOn) :
+                                        (blinker && blinker.leftOn);
 
                     if (!requiredBlinker)
                     {
                         improperLaneChange = true;
                         Debug.Log("[LaneMonitor] Improper lane change: no blinker");
+                    }
+                    else
+                    {
+                        properLaneChange = true;
+                        Debug.Log("[LaneMonitor] Proper lane change initiated towards " + target.name);
                     }
 
                     // COMPLETED LANE CHANGE — we are fully in the adjacent lane
@@ -188,6 +241,9 @@ public class LaneMonitor : MonoBehaviour
                 }
             }
         }
+
+        if (laneExcursion && !properLaneChange)
+            Debug.Log("[LaneMonitor] LANE EXCURSION!");
 
     }
 

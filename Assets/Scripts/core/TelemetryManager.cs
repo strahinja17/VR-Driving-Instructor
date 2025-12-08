@@ -63,15 +63,10 @@ public class TelemetryManager : MonoBehaviour
             float forward = hit.forwardSlip;
 
             if (Mathf.Abs(sideways) > 0.3f)
-                Debug.LogWarning($"⚠️ {name} sideways slip: {sideways:F2}");
+                Debug.Log($"⚠️ {name} sideways slip: {sideways:F2}");
 
             if (Mathf.Abs(forward) > 0.3f)
-                Debug.LogWarning($"⚠️ {name} forward slip: {forward:F2}");
+                Debug.Log($"⚠️ {name} forward slip: {forward:F2}");
         }
-    }
-
-    void OnCollisionEnter(Collision collision)
-    {
-        Debug.Log($"💥 Collision with {collision.gameObject.name} at {rb.linearVelocity.magnitude * 3.6f:F1} km/h");
     }
 }

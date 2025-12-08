@@ -10,12 +10,12 @@ public class LaneMonitor : MonoBehaviour
     public LaneSpline boundLane;           // currently assigned lane after entry
     public bool hasEnteredBoundLane = false;
 
-    public float lateralOffset;
-
     public bool laneExcursion;             // entering oncoming lane
     public bool improperLaneChange;        // adjacent lane entered without blinker
     public bool wrongLaneAtEntry;
     public bool wrongLaneAtExit;
+
+    public bool laneChangeInProgress;
 
     public bool inExitRegion;
 
@@ -23,11 +23,6 @@ public class LaneMonitor : MonoBehaviour
 
     void Update()
     {
-        if (boundLane != null)
-            lateralOffset = boundLane.GetLateralOffset(transform.position);
-        else
-            lateralOffset = 0f;
-
         EvaluateZones();
     }
 
@@ -218,28 +213,24 @@ public class LaneMonitor : MonoBehaviour
                     else
                     {
                         properLaneChange = true;
+                        laneChangeInProgress = true;
                         Debug.Log("[LaneMonitor] Proper lane change initiated towards " + target.name);
-                    }
-
-                    // COMPLETED LANE CHANGE — we are fully in the adjacent lane
-                    bool fullyLeftBoundLane = true;
-                    foreach (var z in activeZones)
-                    {
-                        if (z.parentSpline == boundLane)
-                        {
-                            fullyLeftBoundLane = false;
-                            break;
-                        }
-                    }
-
-                    if (fullyLeftBoundLane)
-                    {
-                        // Rebind to new lane
-                        boundLane = target;
-                        Debug.Log("[LaneMonitor] Lane-change complete. New bound lane: " + boundLane.name);
                     }
                 }
             }
+        }
+
+        if (laneChangeInProgress && activeZones.Count == 1)
+        {
+            // Completed lane change
+            laneChangeInProgress = false;
+            hasEnteredBoundLane = true;
+            foreach (var zone in activeZones)
+            {
+                boundLane = zone.parentSpline;
+                break; // Exit after the first element
+            }            
+            Debug.Log("[LaneMonitor] Lane change complete. New bound lane: " + boundLane.name);
         }
 
         if (laneExcursion && !properLaneChange)

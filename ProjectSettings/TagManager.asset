@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 3
   tags:
   - Anchor
+  - AICar
+  - Wall
+  - Pedestrian
   layers:
   - Default
   - TransparentFX
@@ -13,7 +16,7 @@ TagManager:
   - Water
   - UI
   - MirrorSurface
-  - 
+  - Roads
   - 
   - 
   - 

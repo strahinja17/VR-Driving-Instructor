@@ -44,6 +44,10 @@ public class RedLightEntryZone : MonoBehaviour
         {
             // telemetry.SendInstructorAlert(redLightMessage);
             Debug.Log($"[RedLightEntryZone] Alert: {redLightMessage}");
+            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                            eventName: "RedLightViolation",
+                            playerUtterance: null,
+                            extraInstruction: "Tell the player in a few words, but with intensity, that they've entered an intersection on a red light.");
         }
     }
 }

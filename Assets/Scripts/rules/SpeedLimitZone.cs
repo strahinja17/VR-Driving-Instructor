@@ -18,6 +18,11 @@ public class SpeedLimitZone : MonoBehaviour
         // Send warning BEFORE the change
         // telemetryManager.SendInstructorAlert(alertMessage);
         Debug.Log($"[SpeedLimitZone] Alert: {alertMessage}");
+
+        DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+            eventName: "SpeedLimitChange",
+            playerUtterance: null,
+            extraInstruction: "Use only a few words, to remind the player of the impending speed limit change");
     }
 
     private void OnTriggerExit(Collider other)

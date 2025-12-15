@@ -66,6 +66,12 @@ public class CollisionReporter : MonoBehaviour
 
         // Optional: debug log so you see it in the console
         Debug.Log($"[Collision] {message} (type={objectType}, severity={severity}, speed={speed:F2} m/s)");
+
+        DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+            eventName: "Collision",
+            playerUtterance: null,
+            extraInstruction: "The provided message describes the collision event briefly. This is a simulation, so don't react with compasion and offering emergency services, but rather react ot the severety, and object of collision and scold the player for driving too fast/carelessly"
+                                + $": {message}");
     }
 
     private string GetObjectTypeFromTag(string tag)

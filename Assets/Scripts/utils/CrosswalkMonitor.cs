@@ -46,6 +46,12 @@ public class CrosswalkMonitor : MonoBehaviour
     private void SendAlert(string msg)
     {
         if (debugLogs) Debug.Log($"[Crosswalk] {msg}");
+
+        DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                            eventName: "CrosswalkZone",
+                            playerUtterance: null,
+                            extraInstruction: $"React to message regarding crosswalk adhereance accordingly, and shortly: {msg}");
+        
         // forward to your AI or telemetry event system here
     }
 }

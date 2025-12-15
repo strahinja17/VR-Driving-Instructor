@@ -58,11 +58,19 @@ public class StopSignZone : MonoBehaviour
         {
             // telemetry.SendInstructorAlert(successMessage);
             Debug.Log($"[StopSignZone] Alert: {successMessage}");
+            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                            eventName: "StopSignZone",
+                            playerUtterance: null,
+                            extraInstruction: "Acknowledge properly stopping for stop sign, in very few words.");
         }
         else
         {
             // telemetry.SendInstructorAlert(failureMessage);
             Debug.Log($"[StopSignZone] Alert: {failureMessage}");
+            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                            eventName: "StopSignZone",
+                            playerUtterance: null,
+                            extraInstruction: "Point out that the player did not stop for stop sign properly, in very few words.");
         }
 
         minSpeedInside = float.MaxValue;

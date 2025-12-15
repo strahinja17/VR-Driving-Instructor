@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Created by https://www.toptal.com/developers/gitignore/api/macos,unity
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,unity
 
@@ -131,4 +131,6 @@ sysinfo.txt
 *.suo
 *.booproj
 *.unityproj
->>>>>>> 41e3b6e (Initial commit: Unity VR Core project with LFS + .gitignore)
+
+
+LocalSecrets.cs

@@ -40,9 +40,16 @@ public class TelemetryManager : MonoBehaviour
         lastTime = Time.time;
 
         // Check speed limit
-        if (speed > speedLimit)
+        if (speed > speedLimit + 3f)
         {
             Debug.LogWarning($"⚠️ Speeding! Current: {speed:F1} km/h | Limit: {speedLimit}");
+
+            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+            eventName: "SpeedingWarning",
+            playerUtterance: null,
+            extraInstruction: "Be very brief, < 2 sentences. Don't phrase it with you've revieved.. YOU are warning the player."
+                                +  $"The speed was : {speed:F1} km/h | Limit: {speedLimit}"
+        );
         }
 
         // Check slip for each wheel

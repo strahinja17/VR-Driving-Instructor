@@ -1,1 +1,0 @@
-This folder contains Car Prefabs without any controller implemented. Just prefabed models with materials and LOD's.

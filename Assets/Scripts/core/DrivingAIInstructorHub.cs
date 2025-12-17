@@ -28,7 +28,7 @@ public class DrivingAIInstructorHub : MonoBehaviour
     [SerializeField] private string model = "gpt-realtime-mini";
 
     [Tooltip("Voice name, e.g. alloy, verse, ember")]
-    [SerializeField] private string voice = "onyx";
+    [SerializeField] private string voice = "ash";
 
     [Header("Audio Settings")]
     [Tooltip("Sample rate of PCM16 audio you send as input (must match your mic capture).")]
@@ -111,7 +111,7 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(gameObject);
     }
 
     private async void Start()
@@ -185,14 +185,15 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
                     input_audio_format = "pcm16",
                     output_audio_format = "pcm16",
                     voice = voice,
-                    temperature = 0.3,
+                    temperature = 0.6,
                     turn_detection = (object)null,
                     input_audio_transcription = new
                     {
-                        enabled = true
+                        model = "whisper-1"
                     }
                 }
             };
+
 
             await SendJsonAsync(sessionUpdate);
             _ = Task.Run(ReceiveLoopAsync);

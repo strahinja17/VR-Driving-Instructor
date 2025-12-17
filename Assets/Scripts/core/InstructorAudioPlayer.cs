@@ -69,20 +69,39 @@ public class InstructorAudioPlayer : MonoBehaviour
         _isInitialized = true;
     }
 
+    private Coroutine _subCoroutine;
+
     private void OnEnable()
     {
-        if (DrivingAIInstructorHub.Instance == null) return;
-
-        DrivingAIInstructorHub.Instance.OnInstructorAudioChunk += HandleAudioChunk;
-        // We don't need OnInstructorAudioResponseComplete for streaming playback.
+        _subCoroutine = StartCoroutine(WaitAndSubscribe());
     }
 
     private void OnDisable()
     {
-        if (DrivingAIInstructorHub.Instance == null) return;
+        if (_subCoroutine != null) StopCoroutine(_subCoroutine);
+        Unsubscribe();
+    }
 
+    private System.Collections.IEnumerator WaitAndSubscribe()
+    {
+        // wait until hub instance exists
+        while (DrivingAIInstructorHub.Instance == null)
+            yield return null;
+
+        Subscribe();
+    }
+
+    private void Subscribe()
+    {
+        DrivingAIInstructorHub.Instance.OnInstructorAudioChunk += HandleAudioChunk;
+    }
+
+    private void Unsubscribe()
+    {
+        if (DrivingAIInstructorHub.Instance == null) return;
         DrivingAIInstructorHub.Instance.OnInstructorAudioChunk -= HandleAudioChunk;
     }
+
 
     /// <summary>
     /// Called on main thread when the hub receives a new PCM16 chunk from the model.

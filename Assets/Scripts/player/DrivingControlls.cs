@@ -93,10 +93,10 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
             ""id"": ""89150433-90bc-45ba-a3dd-2cb495ca438a"",
             ""actions"": [
                 {
-                    ""name"": ""Steer_small"",
+                    ""name"": ""Steer"",
                     ""type"": ""Value"",
                     ""id"": ""eda5a457-aabf-49bb-a44a-794d1ab53a27"",
-                    ""expectedControlType"": ""Stick"",
+                    ""expectedControlType"": ""Axis"",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
@@ -106,7 +106,7 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                     ""type"": ""Value"",
                     ""id"": ""405b4d01-c42d-4483-8bfb-cf408feacc8c"",
                     ""expectedControlType"": ""Axis"",
-                    ""processors"": ""AxisDeadzone"",
+                    ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
                 },
@@ -129,31 +129,58 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Steer_big"",
-                    ""type"": ""Value"",
-                    ""id"": ""14274ab5-6841-41a8-a21f-9e43ac4134a3"",
-                    ""expectedControlType"": ""Axis"",
+                    ""name"": ""BlinkerLeft"",
+                    ""type"": ""Button"",
+                    ""id"": ""8f5fa22d-f28c-4002-a9c3-f37b618dee09"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
-                    ""initialStateCheck"": true
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""BlinkerRight"",
+                    ""type"": ""Button"",
+                    ""id"": ""5da7e7ad-b31d-49ad-bdf3-d7ce5034bd41"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PushToTalk"",
+                    ""type"": ""Button"",
+                    ""id"": ""047d18be-258a-4a3d-b308-e6cf2420c11f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Recenter"",
+                    ""type"": ""Button"",
+                    ""id"": ""1f846cfa-ba7c-4db7-8f1c-cf5b6a89995b"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
                 {
                     ""name"": """",
                     ""id"": ""e5506491-8f30-40cd-a293-8c08149c0afc"",
-                    ""path"": ""<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/stick"",
+                    ""path"": ""<HID::Gudsen MOZA R9 Base>/stick/x"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Steer_small"",
+                    ""action"": ""Steer"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
                 {
                     ""name"": """",
                     ""id"": ""e79ff653-7b91-4458-a9ef-988320333eb8"",
-                    ""path"": ""<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/rz"",
+                    ""path"": ""<HID::Gudsen MOZA SRP pedals>/rx"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -164,7 +191,7 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""148db402-9961-47f9-a641-d1f74a9961ad"",
-                    ""path"": ""<Joystick>/stick/down"",
+                    ""path"": ""<HID::Gudsen MOZA SRP pedals>/ry"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -175,7 +202,7 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""9b9942ab-e217-4fd1-bfbd-4ece0e98d490"",
-                    ""path"": ""<HID::Thrustmaster Thrustmaster Racing Wheel FFB>/button9"",
+                    ""path"": ""<HID::Gudsen MOZA R9 Base>/button33"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -185,12 +212,45 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""5d8a5d04-ca3a-4ee0-9773-df20367c7175"",
-                    ""path"": ""<Joystick>/stick/x"",
+                    ""id"": ""95eb5d97-f689-4258-b483-c25446566f77"",
+                    ""path"": ""<HID::Gudsen MOZA R9 Base>/button19"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Steer_big"",
+                    ""action"": ""BlinkerLeft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""22d1600b-e4ac-4a86-8f3a-1835ad77fcef"",
+                    ""path"": ""<HID::Gudsen MOZA R9 Base>/button32"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""BlinkerRight"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b99ae8b9-85b5-4ad2-92d4-44dc4fadc8e3"",
+                    ""path"": ""<HID::Gudsen MOZA R9 Base>/button20"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PushToTalk"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ebafc5d7-6ed2-4481-884a-a9d22762a7e4"",
+                    ""path"": ""<HID::Gudsen MOZA R9 Base>/button36"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Recenter"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -201,11 +261,14 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
 }");
         // Driving
         m_Driving = asset.FindActionMap("Driving", throwIfNotFound: true);
-        m_Driving_Steer_small = m_Driving.FindAction("Steer_small", throwIfNotFound: true);
+        m_Driving_Steer = m_Driving.FindAction("Steer", throwIfNotFound: true);
         m_Driving_Throttle = m_Driving.FindAction("Throttle", throwIfNotFound: true);
         m_Driving_Brake = m_Driving.FindAction("Brake", throwIfNotFound: true);
         m_Driving_ReverseButton = m_Driving.FindAction("ReverseButton", throwIfNotFound: true);
-        m_Driving_Steer_big = m_Driving.FindAction("Steer_big", throwIfNotFound: true);
+        m_Driving_BlinkerLeft = m_Driving.FindAction("BlinkerLeft", throwIfNotFound: true);
+        m_Driving_BlinkerRight = m_Driving.FindAction("BlinkerRight", throwIfNotFound: true);
+        m_Driving_PushToTalk = m_Driving.FindAction("PushToTalk", throwIfNotFound: true);
+        m_Driving_Recenter = m_Driving.FindAction("Recenter", throwIfNotFound: true);
     }
 
     ~@DrivingControlls()
@@ -286,11 +349,14 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
     // Driving
     private readonly InputActionMap m_Driving;
     private List<IDrivingActions> m_DrivingActionsCallbackInterfaces = new List<IDrivingActions>();
-    private readonly InputAction m_Driving_Steer_small;
+    private readonly InputAction m_Driving_Steer;
     private readonly InputAction m_Driving_Throttle;
     private readonly InputAction m_Driving_Brake;
     private readonly InputAction m_Driving_ReverseButton;
-    private readonly InputAction m_Driving_Steer_big;
+    private readonly InputAction m_Driving_BlinkerLeft;
+    private readonly InputAction m_Driving_BlinkerRight;
+    private readonly InputAction m_Driving_PushToTalk;
+    private readonly InputAction m_Driving_Recenter;
     /// <summary>
     /// Provides access to input actions defined in input action map "Driving".
     /// </summary>
@@ -303,9 +369,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// </summary>
         public DrivingActions(@DrivingControlls wrapper) { m_Wrapper = wrapper; }
         /// <summary>
-        /// Provides access to the underlying input action "Driving/Steer_small".
+        /// Provides access to the underlying input action "Driving/Steer".
         /// </summary>
-        public InputAction @Steer_small => m_Wrapper.m_Driving_Steer_small;
+        public InputAction @Steer => m_Wrapper.m_Driving_Steer;
         /// <summary>
         /// Provides access to the underlying input action "Driving/Throttle".
         /// </summary>
@@ -319,9 +385,21 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @ReverseButton => m_Wrapper.m_Driving_ReverseButton;
         /// <summary>
-        /// Provides access to the underlying input action "Driving/Steer_big".
+        /// Provides access to the underlying input action "Driving/BlinkerLeft".
         /// </summary>
-        public InputAction @Steer_big => m_Wrapper.m_Driving_Steer_big;
+        public InputAction @BlinkerLeft => m_Wrapper.m_Driving_BlinkerLeft;
+        /// <summary>
+        /// Provides access to the underlying input action "Driving/BlinkerRight".
+        /// </summary>
+        public InputAction @BlinkerRight => m_Wrapper.m_Driving_BlinkerRight;
+        /// <summary>
+        /// Provides access to the underlying input action "Driving/PushToTalk".
+        /// </summary>
+        public InputAction @PushToTalk => m_Wrapper.m_Driving_PushToTalk;
+        /// <summary>
+        /// Provides access to the underlying input action "Driving/Recenter".
+        /// </summary>
+        public InputAction @Recenter => m_Wrapper.m_Driving_Recenter;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -348,9 +426,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         {
             if (instance == null || m_Wrapper.m_DrivingActionsCallbackInterfaces.Contains(instance)) return;
             m_Wrapper.m_DrivingActionsCallbackInterfaces.Add(instance);
-            @Steer_small.started += instance.OnSteer_small;
-            @Steer_small.performed += instance.OnSteer_small;
-            @Steer_small.canceled += instance.OnSteer_small;
+            @Steer.started += instance.OnSteer;
+            @Steer.performed += instance.OnSteer;
+            @Steer.canceled += instance.OnSteer;
             @Throttle.started += instance.OnThrottle;
             @Throttle.performed += instance.OnThrottle;
             @Throttle.canceled += instance.OnThrottle;
@@ -360,9 +438,18 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
             @ReverseButton.started += instance.OnReverseButton;
             @ReverseButton.performed += instance.OnReverseButton;
             @ReverseButton.canceled += instance.OnReverseButton;
-            @Steer_big.started += instance.OnSteer_big;
-            @Steer_big.performed += instance.OnSteer_big;
-            @Steer_big.canceled += instance.OnSteer_big;
+            @BlinkerLeft.started += instance.OnBlinkerLeft;
+            @BlinkerLeft.performed += instance.OnBlinkerLeft;
+            @BlinkerLeft.canceled += instance.OnBlinkerLeft;
+            @BlinkerRight.started += instance.OnBlinkerRight;
+            @BlinkerRight.performed += instance.OnBlinkerRight;
+            @BlinkerRight.canceled += instance.OnBlinkerRight;
+            @PushToTalk.started += instance.OnPushToTalk;
+            @PushToTalk.performed += instance.OnPushToTalk;
+            @PushToTalk.canceled += instance.OnPushToTalk;
+            @Recenter.started += instance.OnRecenter;
+            @Recenter.performed += instance.OnRecenter;
+            @Recenter.canceled += instance.OnRecenter;
         }
 
         /// <summary>
@@ -374,9 +461,9 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// <seealso cref="DrivingActions" />
         private void UnregisterCallbacks(IDrivingActions instance)
         {
-            @Steer_small.started -= instance.OnSteer_small;
-            @Steer_small.performed -= instance.OnSteer_small;
-            @Steer_small.canceled -= instance.OnSteer_small;
+            @Steer.started -= instance.OnSteer;
+            @Steer.performed -= instance.OnSteer;
+            @Steer.canceled -= instance.OnSteer;
             @Throttle.started -= instance.OnThrottle;
             @Throttle.performed -= instance.OnThrottle;
             @Throttle.canceled -= instance.OnThrottle;
@@ -386,9 +473,18 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
             @ReverseButton.started -= instance.OnReverseButton;
             @ReverseButton.performed -= instance.OnReverseButton;
             @ReverseButton.canceled -= instance.OnReverseButton;
-            @Steer_big.started -= instance.OnSteer_big;
-            @Steer_big.performed -= instance.OnSteer_big;
-            @Steer_big.canceled -= instance.OnSteer_big;
+            @BlinkerLeft.started -= instance.OnBlinkerLeft;
+            @BlinkerLeft.performed -= instance.OnBlinkerLeft;
+            @BlinkerLeft.canceled -= instance.OnBlinkerLeft;
+            @BlinkerRight.started -= instance.OnBlinkerRight;
+            @BlinkerRight.performed -= instance.OnBlinkerRight;
+            @BlinkerRight.canceled -= instance.OnBlinkerRight;
+            @PushToTalk.started -= instance.OnPushToTalk;
+            @PushToTalk.performed -= instance.OnPushToTalk;
+            @PushToTalk.canceled -= instance.OnPushToTalk;
+            @Recenter.started -= instance.OnRecenter;
+            @Recenter.performed -= instance.OnRecenter;
+            @Recenter.canceled -= instance.OnRecenter;
         }
 
         /// <summary>
@@ -430,12 +526,12 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
     public interface IDrivingActions
     {
         /// <summary>
-        /// Method invoked when associated input action "Steer_small" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "Steer" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnSteer_small(InputAction.CallbackContext context);
+        void OnSteer(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Throttle" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
@@ -458,11 +554,32 @@ public partial class @DrivingControlls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnReverseButton(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Steer_big" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "BlinkerLeft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnSteer_big(InputAction.CallbackContext context);
+        void OnBlinkerLeft(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "BlinkerRight" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnBlinkerRight(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "PushToTalk" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPushToTalk(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Recenter" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRecenter(InputAction.CallbackContext context);
     }
 }

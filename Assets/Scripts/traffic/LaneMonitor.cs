@@ -21,6 +21,15 @@ public class LaneMonitor : MonoBehaviour
 
     private HashSet<LaneZone> activeZones = new HashSet<LaneZone>();
 
+    private bool AIMode;
+
+    public AudioClip laneExcur;
+
+    void Start()
+    {
+        AIMode = StudyConditionManager.Instance.IsAIEnabled;
+    }
+
     void Update()
     {
         EvaluateZones();
@@ -72,10 +81,12 @@ public class LaneMonitor : MonoBehaviour
             {
                 wrongLaneAtEntry = true;
                 Debug.Log("[LaneMonitor] WRONG lane before entry: " + zone.parentSpline.name);
-                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                eventName: "LaneWarning",
-                playerUtterance: null,
-                extraInstruction: "Tell the player to be careful when entering a new lane in the intersection, not to cut accross the opposing lane, few words!!");
+                if(AIMode) {
+                    DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                    eventName: "LaneWarning",
+                    playerUtterance: null,
+                    extraInstruction: "Tell the player to be careful when entering a new lane in the intersection, not to cut accross the opposing lane, few words!!");
+                }
             }
         }
 
@@ -88,10 +99,12 @@ public class LaneMonitor : MonoBehaviour
             {
                 wrongLaneAtExit = true;
                 Debug.Log("[LaneMonitor] WRONG EXIT: " + zone.parentSpline.name);
-                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                eventName: "LaneWarning",
-                playerUtterance: null,
-                extraInstruction: "Tell the player to be careful when exiting a lane in the intersection, not to cut accross the opposing lane, few words!!");
+                if (AIMode) {
+                    DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                    eventName: "LaneWarning",
+                    playerUtterance: null,
+                    extraInstruction: "Tell the player to be careful when exiting a lane in the intersection, not to cut accross the opposing lane, few words!!");
+                }
             
             }
             else
@@ -218,10 +231,12 @@ public class LaneMonitor : MonoBehaviour
                     {
                         improperLaneChange = true;
                         Debug.Log("[LaneMonitor] Improper lane change: no blinker");
-                        DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                        eventName: "LaneWarning",
-                        playerUtterance: null,
-                        extraInstruction: "Tell the player to always use blinkers properlly when changing lanes, in very few words!!");
+                        if (AIMode) {
+                            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                eventName: "LaneWarning",
+                                playerUtterance: null,
+                                extraInstruction: "Tell the player to always use blinkers properlly when changing lanes, in very few words!!");
+                        }
 
                     }
                     else
@@ -245,19 +260,26 @@ public class LaneMonitor : MonoBehaviour
                 break; // Exit after the first element
             }
             Debug.Log("[LaneMonitor] Lane change complete. New bound lane: " + boundLane.name);
-            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                            eventName: "LaneChange",
-                            playerUtterance: null,
-                            extraInstruction: "Acknowledge proper lane change, in very few words.");
+            if (AIMode) {
+                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                eventName: "LaneChange",
+                                playerUtterance: null,
+                                extraInstruction: "Acknowledge proper lane change, in very few words.");
+            }
         }
 
         if (laneExcursion && !properLaneChange)
         {
-            Debug.Log("[LaneMonitor] LANE EXCURSION!");
-            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                            eventName: "LaneWarning",
-                            playerUtterance: null,
-                            extraInstruction: "Alert the player that they are stepping out of their lane, shortly and with authority");
+            // Debug.Log("[LaneMonitor] LANE EXCURSION!");
+            if (AIMode) {
+                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                eventName: "LaneWarning",
+                                playerUtterance: null,
+                                extraInstruction: "Alert the player that they are stepping out of their lane, shortly and with authority");
+            } else
+            {
+                GlobalInstructorAudio.Play(laneExcur);
+            }
         }
     }
 

@@ -11,6 +11,15 @@ public class SpeedLimitZone : MonoBehaviour
     [Header("Warning message when ENTERING the box")]
     public string alertMessage = "Watch the changed speed limit ahead.";
 
+    private bool AIMode;
+
+    public AudioClip limitChange;
+
+    void Start()
+    {
+        AIMode = StudyConditionManager.Instance.IsAIEnabled;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (telemetryManager == null) return;
@@ -19,10 +28,15 @@ public class SpeedLimitZone : MonoBehaviour
         // telemetryManager.SendInstructorAlert(alertMessage);
         Debug.Log($"[SpeedLimitZone] Alert: {alertMessage}");
 
+        if (AIMode) {
         DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
             eventName: "SpeedLimitChange",
             playerUtterance: null,
             extraInstruction: "Use only a few words, to remind the player of the impending speed limit change");
+        } else
+        {
+            GlobalInstructorAudio.Play(limitChange);
+        }
     }
 
     private void OnTriggerExit(Collider other)

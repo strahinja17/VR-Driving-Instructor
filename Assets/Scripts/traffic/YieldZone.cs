@@ -16,11 +16,22 @@ public class YieldZone : MonoBehaviour
     private float minSpeedInside = float.MaxValue;
     private Transform playerRoot;
 
+    private bool AIMode;
+
+    public AudioClip yieldVio;
+
     private void Awake()
     {
         if (telemetry != null)
             playerRoot = telemetry.transform.root;
+
     }
+
+    void Start()
+    {
+        AIMode = StudyConditionManager.Instance.IsAIEnabled;
+    }
+
 
     private bool IsPlayer(Collider other)
     {
@@ -61,19 +72,26 @@ public class YieldZone : MonoBehaviour
         {
             // telemetry.SendInstructorAlert(successMessage);
             Debug.Log($"[YieldZone] Alert: {successMessage}");
-            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                            eventName: "YieldSignZone",
-                            playerUtterance: null,
-                            extraInstruction: "Acknowledge properly yielding for a yield sign, in very few words.");
+            if (AIMode) {
+                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                eventName: "YieldSignZone",
+                                playerUtterance: null,
+                                extraInstruction: "Acknowledge properly yielding for a yield sign, in very few words.");
+            }
         }
         else
         {
             // telemetry.SendInstructorAlert(failureMessage);
             Debug.Log($"[YieldZone] Alert: {failureMessage}");
-            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                            eventName: "YieldSignZone",
-                            playerUtterance: null,
-                            extraInstruction: "Point out the player failed to yield propely for a yield sign, in very few words.");
+            if (AIMode) {
+                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                eventName: "YieldSignZone",
+                                playerUtterance: null,
+                                extraInstruction: "Point out the player failed to yield propely for a yield sign, in very few words.");
+            } else
+            {
+                GlobalInstructorAudio.Play(yieldVio);
+            }
         }
 
         minSpeedInside = float.MaxValue;

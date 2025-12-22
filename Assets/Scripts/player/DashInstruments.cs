@@ -64,7 +64,7 @@ public class DashInstruments : MonoBehaviour
 
         // Assume: 1 = no throttle, -1 = full throttle (common for triggers)
         // Map -1..1 -> 0..1 where 0 = no gas, 1 = full gas
-        throttle01 = Mathf.Clamp01((1f - rawThrottle) * 0.5f);
+        throttle01 = Mathf.InverseLerp(-1f, 1f, rawThrottle);
 
 
         // Speed needle

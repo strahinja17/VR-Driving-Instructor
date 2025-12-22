@@ -13,10 +13,19 @@ public class RedLightEntryZone : MonoBehaviour
 
     private Transform _playerRoot;
 
+    private bool AIMode;
+
+    public AudioClip redLightVio;
+
     private void Awake()
     {
         if (telemetry != null)
             _playerRoot = telemetry.transform.root;
+    }
+
+    void Start()
+    {
+        AIMode = StudyConditionManager.Instance.IsAIEnabled;
     }
 
     private bool IsPlayer(Collider other)
@@ -44,10 +53,15 @@ public class RedLightEntryZone : MonoBehaviour
         {
             // telemetry.SendInstructorAlert(redLightMessage);
             Debug.Log($"[RedLightEntryZone] Alert: {redLightMessage}");
+            if (AIMode) {
             DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
                             eventName: "RedLightViolation",
                             playerUtterance: null,
                             extraInstruction: "Tell the player in a few words, but with intensity, that they've entered an intersection on a red light.");
+            } else
+            {
+                GlobalInstructorAudio.Play(redLightVio);
+            }
         }
     }
 }

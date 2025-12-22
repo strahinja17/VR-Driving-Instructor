@@ -16,11 +16,22 @@ public class StopSignZone : MonoBehaviour
     private float minSpeedInside = float.MaxValue;
     private Transform playerRoot;
 
+    private bool AIMode;
+
+    public AudioClip stopVio;
+
     private void Awake()
     {
         if (telemetry != null)
             playerRoot = telemetry.transform.root;
+
     }
+
+    void Start()
+    {
+        AIMode = StudyConditionManager.Instance.IsAIEnabled;
+    }
+
 
     private bool IsPlayer(Collider other)
     {
@@ -57,20 +68,27 @@ public class StopSignZone : MonoBehaviour
         if (minSpeedInside <= stopThreshold)
         {
             // telemetry.SendInstructorAlert(successMessage);
-            Debug.Log($"[StopSignZone] Alert: {successMessage}");
-            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                            eventName: "StopSignZone",
-                            playerUtterance: null,
-                            extraInstruction: "Acknowledge properly stopping for stop sign, in very few words.");
+            if (AIMode) {
+                Debug.Log($"[StopSignZone] Alert: {successMessage}");
+                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                eventName: "StopSignZone",
+                                playerUtterance: null,
+                                extraInstruction: "Acknowledge properly stopping for stop sign, in very few words.");
+            }
         }
         else
         {
             // telemetry.SendInstructorAlert(failureMessage);
             Debug.Log($"[StopSignZone] Alert: {failureMessage}");
-            DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                            eventName: "StopSignZone",
-                            playerUtterance: null,
-                            extraInstruction: "Point out that the player did not stop for stop sign properly, in very few words.");
+            if (AIMode) {
+                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                eventName: "StopSignZone",
+                                playerUtterance: null,
+                                extraInstruction: "Point out that the player did not stop for stop sign properly, in very few words.");
+            } else
+            {
+                GlobalInstructorAudio.Play(stopVio);
+            }
         }
 
         minSpeedInside = float.MaxValue;

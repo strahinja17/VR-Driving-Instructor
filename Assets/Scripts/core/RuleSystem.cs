@@ -27,12 +27,12 @@ public class RuleSystem : MonoBehaviour
                 case LineType.SpeedLimit:
                     currentSpeedLimitKmh = lm.speedLimitKmh;
                     DrivingEvents.RaiseSpeedLimitChanged(lm.speedLimitKmh, lm.markerId);
-                    Debug.Log($"[RuleSystem] Speed limit now {lm.speedLimitKmh} via {lm.markerId}");
+                    // Debug.Log($"[RuleSystem] Speed limit now {lm.speedLimitKmh} via {lm.markerId}");
                     break;
 
                 case LineType.StopLine:
                     DrivingEvents.RaiseStopLineCrossed(lm.markerId);
-                    Debug.Log($"[RuleSystem] Stop line crossed ({lm.markerId})");
+                    // Debug.Log($"[RuleSystem] Stop line crossed ({lm.markerId})");
                     break;
             }
         }

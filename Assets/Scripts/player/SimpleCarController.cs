@@ -1,135 +1,74 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class SimpleCarController : MonoBehaviour
 {
-    public WheelCollider[] wheels;
+    [Header("Wheel Colliders / Meshes")]
+    public WheelCollider[] wheels;     // 0,1 = front
     public Transform[] wheelMeshes;
+
+    [Header("Tuning")]
     public float motorTorque = 500f;
     public float maxSteerAngle = 30f;
     public float brakeTorque = 3000f;
 
-    private float accelInput = 0f;
-    private float steerInput;
-    private float brakeInput;
-    private bool isReversing = false;
+    [Header("Steering Assist")]
+    public float steeringHighSpeedReduction = 0.5f; // reduces steer at high speed
+    public float highSpeedReference = 50f;          // m/s-ish reference
 
     private Rigidbody rb;
-    private DrivingControlls drivingControls;
+    private CarInputHub input;
 
-    private CarBlinkers blinkers;
-
-    void Start()
+    private void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.centerOfMass = new Vector3(0f, 0.5f, 0.1f);
 
-        // Initialize and enable DrivingControls
-        drivingControls = new DrivingControlls();
-        drivingControls.Enable();
-
-        // Bind the ReverseButton action
-        drivingControls.Driving.ReverseButton.performed += ctx => ToggleReverse();
-
-        blinkers = GetComponent<CarBlinkers>();
-    }
-
-    void ToggleReverse()
-    {
-        isReversing = !isReversing;
-    }
-
-    const float wheelMaxAbs = 0.69f;  // from your observation in Input Debugger
-
-    void Update()
-    {
-        // Read input from DrivingControls
-        // --- Steering from wheel (stick.x) ---
-        Vector2 steerVec = drivingControls.Driving.Steer_small.ReadValue<Vector2>();
-        float rawStickX = steerVec.x;          // this reacts instantly with small movements
-
-        // Normalize from [-0.69 .. +0.69] to [-1 .. +1]
-        float normalized = 0f;
-        if (Mathf.Abs(rawStickX) > 0.0001f)
-            normalized = Mathf.Clamp(rawStickX / wheelMaxAbs, -1f, 1f);
-
-        steerInput = normalized;
-        float rawThrottle = drivingControls.Driving.Throttle.ReadValue<float>();
-        accelInput = Mathf.InverseLerp(1f, -1f, rawThrottle); 
-        brakeInput = Mathf.Abs(drivingControls.Driving.Brake.ReadValue<float>() - 1);
-
-        // Keyboard fallback (if no joystick input is detected)
-        var keyboard = Keyboard.current;
-        if (keyboard != null)
+        input = GetComponent<CarInputHub>();
+        if (input == null)
         {
-            // Only overwrite inputs if relevant keyboard keys are pressed
-            bool anyKeyPressed = keyboard.wKey.isPressed || keyboard.sKey.isPressed ||
-                                 keyboard.aKey.isPressed || keyboard.dKey.isPressed ||
-                                 keyboard.spaceKey.isPressed;
-
-            if (anyKeyPressed)
-            {
-                accelInput = (keyboard.wKey.isPressed ? 1f : 0f) +
-                             (keyboard.sKey.isPressed ? -1f : 0f);
-
-                steerInput = (keyboard.aKey.isPressed ? -1f : 0f) +
-                             (keyboard.dKey.isPressed ? 1f : 0f);
-
-                brakeInput = keyboard.spaceKey.isPressed ? 1f : 0f;
-            }
-
-            if (keyboard.qKey.isPressed)
-            {
-                blinkers.ToggleLeft();
-            }
-
-            if (keyboard.eKey.isPressed)
-            {
-                blinkers.ToggleRight();
-            }
-
-        }
-
-        Debug.Log("Brake Input: " + brakeInput);
-
-        // Apply a dead zone to throttle input
-        if (Mathf.Abs(accelInput) < 0.1f)
-        {
-            accelInput = 0f;
+            Debug.LogError("Missing CarInputHub on the car. Add it to the same GameObject.");
         }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        // Steering
-        float speedFactor = Mathf.Clamp01(rb.linearVelocity.magnitude / 50f); // Scale steering based on speed
-        float adjustedSteerAngle = steerInput * maxSteerAngle * (1f - speedFactor * 0.5f); // Reduce steering at high speeds
-        wheels[0].steerAngle = adjustedSteerAngle;
-        wheels[1].steerAngle = adjustedSteerAngle;
+        if (input == null) return;
 
-        // Motor torque and braking logic
-        if (brakeInput != 0f)
+        // --- Steering ---
+        float speed = rb.linearVelocity.magnitude;
+        float speedFactor = Mathf.Clamp01(speed / highSpeedReference);
+        float steerReduction = 1f - speedFactor * steeringHighSpeedReduction;
+
+        float steerAngle = input.Steer * maxSteerAngle * steerReduction;
+        wheels[0].steerAngle = steerAngle;
+        wheels[1].steerAngle = steerAngle;
+
+        // --- Motor + Brakes ---
+        float brake01 = input.Brake;
+        float throttle01 = input.Throttle;
+
+        // If you want brake to override throttle:
+        if (brake01 > 0.001f)
         {
-            // Apply brake torque to all wheels and disable motor torque
             foreach (var w in wheels)
             {
                 w.motorTorque = 0f;
-                w.brakeTorque = brakeTorque * brakeInput;
+                w.brakeTorque = brakeTorque * brake01;
             }
         }
-        else if (Mathf.Abs(accelInput) > 0.1f)
+        else if (throttle01 > 0.001f)
         {
-            // Apply motor torque based on throttle and reverse mode
-            float appliedTorque = accelInput * motorTorque * (isReversing ? -1f : 1f);
+            float direction = input.Reverse ? -1f : 1f;
+            float torque = throttle01 * motorTorque * direction;
+
             foreach (var w in wheels)
             {
-                w.motorTorque = appliedTorque;
-                w.brakeTorque = 0f; // Release brakes
+                w.brakeTorque = 0f;
+                w.motorTorque = torque;
             }
         }
         else
         {
-            // No throttle or brake: release motor torque and brakes
             foreach (var w in wheels)
             {
                 w.motorTorque = 0f;
@@ -137,7 +76,7 @@ public class SimpleCarController : MonoBehaviour
             }
         }
 
-        // Sync visuals
+        // --- Sync visuals ---
         for (int i = 0; i < wheels.Length; i++)
         {
             wheels[i].GetWorldPose(out Vector3 pos, out Quaternion rot);

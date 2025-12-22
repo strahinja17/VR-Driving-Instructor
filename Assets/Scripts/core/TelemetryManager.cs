@@ -15,11 +15,16 @@ public class TelemetryManager : MonoBehaviour
     private Vector3 lastVelocity;
     private float lastTime;
 
+    private bool AImode;
+
+    public AudioClip speeding;
+
     void Start()
     {
         if (rb == null) rb = GetComponent<Rigidbody>();
         lastVelocity = rb.linearVelocity;
         lastTime = Time.time;
+        AImode = StudyConditionManager.Instance.IsAIEnabled;
     }
 
     void Update()
@@ -33,7 +38,7 @@ public class TelemetryManager : MonoBehaviour
         if (dt > 0)
         {
             float acceleration = (rb.linearVelocity.magnitude - lastVelocity.magnitude) / dt;
-            Debug.Log($"Acceleration: {acceleration:F2} m/s²");
+            // Debug.Log($"Acceleration: {acceleration:F2} m/s²");
         }
 
         lastVelocity = rb.linearVelocity;
@@ -42,14 +47,19 @@ public class TelemetryManager : MonoBehaviour
         // Check speed limit
         if (speed > speedLimit + 3f)
         {
-            Debug.LogWarning($"⚠️ Speeding! Current: {speed:F1} km/h | Limit: {speedLimit}");
+            // Debug.LogWarning($"⚠️ Speeding! Current: {speed:F1} km/h | Limit: {speedLimit}");
 
+            if (AImode) {
             DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
             eventName: "SpeedingWarning",
             playerUtterance: null,
             extraInstruction: "Be very brief, < 2 sentences. Don't phrase it with you've revieved.. YOU are warning the player."
                                 +  $"The speed was : {speed:F1} km/h | Limit: {speedLimit}"
-        );
+                );
+            } else
+            {
+                GlobalInstructorAudio.Play(speeding);
+            }
         }
 
         // Check slip for each wheel

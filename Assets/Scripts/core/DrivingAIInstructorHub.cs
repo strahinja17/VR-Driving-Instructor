@@ -55,14 +55,15 @@ Goals:
 - Explain mistakes clearly but briefly.
 - Adapt feedback to their current context.
 - Prioritize safety-critical issues over minor optimizations.
-- Adopt the persona of the driving instructor. Be more natural and unforced, NOT robotic, more raunchy and strictish.
-- NEVER say things that an AI would say, like 'If you need further assistance let me know..', don't announce things with 'warning'
+- Adopt the persona of the driving instructor. Be more natural and unforced, NOT robotic.
+- NEVER say things that an AI would say, like 'If you need further assistance let me know..', DON'T ANNOUNCE SENTENCES WITH 'WARNING'!
+- Use the fact that you're an LLM and have the entire convo as context, when you see a pattern or something that can be inferred from the conversation, mention it briefly.
 
 Rules:
 - Respond in short 1–2 sentence bursts unless explicitly asked for a detailed explanation. This is a hard limit!!
-- Speak in the second person ('you'), not third person.
+- Speak in the first person to the player (reffer to player with 'you'), not third person.
 - Never mention that you are an AI or a language model.
-- If the situation indicates imminent danger, be firm and immediate.
+- If the situation indicates imminent danger, be firm and immediate (DON'T USE THE WORD 'WARNING').
 
 Input format:
 You will receive messages that contain:
@@ -70,7 +71,6 @@ You will receive messages that contain:
 - PLAYER_UTTERANCE: <optional last thing the player said or asked (may be empty)>
 
 You may also receive raw audio input from the player: treat it as what they just said.
-If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
 ";
 
     [Header("Debug")]
@@ -100,6 +100,31 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
     // main-thread dispatch
     private readonly object _mainThreadLock = new object();
     private readonly Queue<Action> _mainThreadActions = new Queue<Action>();
+
+    // ===== Request queue / single-flight =====
+
+    private class PendingInstructorRequest
+    {
+        public string eventName;
+        public string playerUtterance;
+        public string extraInstruction;
+        public byte[] playerAudioPcm16;
+        public float enqueuedAt;
+    }
+
+    [SerializeField] private int maxQueueSize = 25;
+    [SerializeField] private bool dropOldestWhenFull = true;
+
+    private readonly Queue<PendingInstructorRequest> _requestQueue = new Queue<PendingInstructorRequest>();
+    private readonly object _queueLock = new object();
+
+    private Task _queuePumpTask;
+    private TaskCompletionSource<bool> _responseDoneTcs;
+    private volatile bool _responseInFlight = false;
+
+    // serialize socket sends
+    private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
+
 
     // ===== Unity lifecycle =====
 
@@ -209,7 +234,7 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
 
     // ===== Public API =====
 
-    public async void NotifyDrivingEvent(
+    public void NotifyDrivingEvent(
         string eventName,
         string playerUtterance = null,
         string extraInstruction = null,
@@ -221,16 +246,17 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
             return;
         }
 
-        // --- rate limiting ---
+        // --- rate limiting (same as yours) ---
         float now = Time.unscaledTime;
+        bool isDirection = eventName == "Directions";
 
-        if (now - _lastAnyEventTime < minSecondsBetweenAnyCalls)
+        if (now - _lastAnyEventTime < minSecondsBetweenAnyCalls && !isDirection)
         {
             DebugLog($"Skipped event '{eventName}' due to global rate limit.");
             return;
         }
 
-        if (_lastEventTimeByName.TryGetValue(eventName, out float lastTimeForThisEvent))
+        if (_lastEventTimeByName.TryGetValue(eventName, out float lastTimeForThisEvent) && !isDirection)
         {
             if (now - lastTimeForThisEvent < minSecondsBetweenSameEvent)
             {
@@ -243,60 +269,132 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
         _lastEventTimeByName[eventName] = now;
         // --- end rate limiting ---
 
-        try
+        // enqueue
+        var req = new PendingInstructorRequest
         {
-            // 1) Audio input (optional)
-            if (playerAudioPcm16 != null && playerAudioPcm16.Length > 0)
+            eventName = eventName,
+            playerUtterance = playerUtterance,
+            extraInstruction = extraInstruction,
+            playerAudioPcm16 = playerAudioPcm16,
+            enqueuedAt = now
+        };
+
+        lock (_queueLock)
+        {
+            if (_requestQueue.Count >= maxQueueSize)
             {
-                await SendAudioInputAsync(playerAudioPcm16);
+                if (dropOldestWhenFull)
+                {
+                    _requestQueue.Dequeue(); // drop oldest
+                }
+                else
+                {
+                    DebugLog($"Dropped event '{eventName}' because queue is full.");
+                    return;
+                }
             }
 
-            // 2) Text payload
-            string payloadText =
-                $"GAME_EVENT: {eventName}\n" +
-                $"PLAYER_UTTERANCE: {(string.IsNullOrEmpty(playerUtterance) ? "<none>" : playerUtterance)}\n";
-
-            var conversationItemCreate = new
-            {
-                type = "conversation.item.create",
-                item = new
-                {
-                    type = "message",
-                    role = "user",
-                    content = new object[]
-                    {
-                        new
-                        {
-                            type = "input_text",
-                            text = payloadText
-                        }
-                    }
-                }
-            };
-
-            await SendJsonAsync(conversationItemCreate);
-
-            // 3) Ask for response
-            var responseCreate = new
-            {
-                type = "response.create",
-                response = new
-                {
-                    modalities = new[] { "text", "audio" },
-                    instructions = string.IsNullOrEmpty(extraInstruction) ? null : extraInstruction
-                }
-            };
-
-            _currentTextResponse.Clear();
-            await SendJsonAsync(responseCreate);
+            _requestQueue.Enqueue(req);
         }
-        catch (Exception ex)
+
+        EnsureQueuePumpRunning();
+    }
+
+    private void EnsureQueuePumpRunning()
+    {
+        if (_queuePumpTask != null && !_queuePumpTask.IsCompleted) return;
+        _queuePumpTask = Task.Run(PumpQueueAsync);
+    }
+
+    private async Task PumpQueueAsync()
+    {
+        while (_isConnected && _socket != null && _socket.State == WebSocketState.Open && !_cts.IsCancellationRequested)
         {
-            DebugLog("Error in NotifyDrivingEvent: " + ex);
-            EnqueueOnMainThread(() =>
-                OnInstructorError?.Invoke("NotifyDrivingEvent error: " + ex.Message));
+            PendingInstructorRequest req = null;
+
+            lock (_queueLock)
+            {
+                if (_requestQueue.Count > 0 && !_responseInFlight)
+                    req = _requestQueue.Dequeue();
+            }
+
+            if (req == null)
+            {
+                await Task.Delay(10, _cts.Token);
+                continue;
+            }
+
+            try
+            {
+                _responseInFlight = true;
+                _responseDoneTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                await SendRequestAsync(req);
+
+                // Wait until server says response is done (HandleServerEvent will complete the TCS)
+                await _responseDoneTcs.Task;
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                DebugLog("PumpQueueAsync error: " + ex);
+                EnqueueOnMainThread(() => OnInstructorError?.Invoke("Queue pump error: " + ex.Message));
+            }
+            finally
+            {
+                _responseInFlight = false;
+                _responseDoneTcs = null;
+            }
         }
     }
+
+    private async Task SendRequestAsync(PendingInstructorRequest req)
+    {
+        // 1) Optional audio input (only if you’re actually using mic input)
+        if (req.playerAudioPcm16 != null && req.playerAudioPcm16.Length > 0)
+            await SendAudioInputAsync(req.playerAudioPcm16);
+
+        // 2) Text payload
+        string payloadText =
+            $"GAME_EVENT: {req.eventName}\n" +
+            $"PLAYER_UTTERANCE: {(string.IsNullOrEmpty(req.playerUtterance) ? "<none>" : req.playerUtterance)}\n";
+
+        var conversationItemCreate = new
+        {
+            type = "conversation.item.create",
+            item = new
+            {
+                type = "message",
+                role = "user",
+                content = new object[]
+                {
+                    new { type = "input_text", text = payloadText }
+                }
+            }
+        };
+
+        await SendJsonAsync(conversationItemCreate);
+
+        // 3) Ask for response
+        var responseCreate = new
+        {
+            type = "response.create",
+            response = new
+            {
+                modalities = new[] { "text", "audio" },
+                instructions = string.IsNullOrEmpty(req.extraInstruction) ? null : req.extraInstruction
+            }
+        };
+
+        _currentTextResponse.Clear();
+        await SendJsonAsync(responseCreate);
+    }
+
+
+
 
     public void NotifyPlayerVoiceOnly(
         byte[] playerAudioPcm16,
@@ -357,13 +455,19 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
         var bytes = Encoding.UTF8.GetBytes(json);
         var segment = new ArraySegment<byte>(bytes);
 
-        await _socket.SendAsync(segment, WebSocketMessageType.Text, true, _cts.Token);
-
-        if (logDebugMessages)
+        await _sendLock.WaitAsync(_cts.Token);
+        try
         {
-            DebugLog(">> " + json);
+            await _socket.SendAsync(segment, WebSocketMessageType.Text, true, _cts.Token);
         }
+        finally
+        {
+            _sendLock.Release();
+        }
+
+        if (logDebugMessages) DebugLog(">> " + json);
     }
+
 
     private async Task ReceiveLoopAsync()
     {
@@ -497,7 +601,7 @@ If PLAYER_UTTERANCE is empty, treat the event as system-generated feedback.
 
             case "response.done":
             {
-                // whole response finished
+                _responseDoneTcs?.TrySetResult(true);
                 break;
             }
 

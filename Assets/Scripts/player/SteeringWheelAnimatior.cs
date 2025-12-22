@@ -1,81 +1,53 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class SteeringWheelAnimator : MonoBehaviour
 {
-    [Header("References")]
-    public Transform steeringWheel;       // Assign in Inspector
-    public float maxSteeringAngle = 450f; // 900° wheels = 450° each side
-    public float rotationSmoothing = 12f; // Higher = snappier, lower = smoother
+    public Transform steeringWheel;
+    public CarInputHub input;
 
-    private float lastSteerAngle = 0f;
+    public float maxSteeringAngle = 450f;
+    public float rotationSmoothing = 12f;
 
-    public float steeringDelta = 0.05f;
+    public enum Axis { X, Y, Z }
+    public Axis rotateAxis = Axis.Z;
 
-    private DrivingControlls controls;
-    private float steerInput;             // -1 to +1
-    private float currentAngle;           // Smoothed wheel angle
+    private float currentAngle;
+    private Quaternion baseLocalRotation;
 
     private void Awake()
     {
-        controls = new DrivingControlls();
-        controls.Enable();
-    }
+        if (input == null)
+            input = GetComponentInParent<CarInputHub>();
 
-    // private void Update()
-    // {
-    //     // Read steer input from your steering wheel profile
-    //     steerInput = controls.Driving.Steer.ReadValue<float>();
-    //     // steerInput should be -1 (full left) to +1 (full right)
-
-    //     // Convert to degrees
-    //     float targetAngle = steerInput * maxSteeringAngle;
-
-    //     // Smooth rotation
-    //     currentAngle = Mathf.Lerp(currentAngle, targetAngle, Time.deltaTime * rotationSmoothing);
-
-    //     // Apply rotation — adjust axis if needed depending on model orientation
-    //     steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -targetAngle);
-    // }
-
-    void LateUpdate()
-{
-    if (controls == null || steeringWheel == null)
-        return;
-
-    // RAW value from -1 .. +1
-    Vector2 steerVec = controls.Driving.Steer_small.ReadValue<Vector2>();
-    float rawStickX = steerVec.x;          // this reacts instantly with small movements
-
-    float angle = 0f;   
-    if (Mathf.Abs(rawStickX) > 0.42f)
-    {
-        rawStickX = controls.Driving.Steer_big.ReadValue<float>();
-    }
-    else
-    {
-        float breaking = controls.Driving.Brake.ReadValue<float>();
-        
-        if (breaking != 1f)
-        {
-            if (Mathf.Abs(rawStickX * maxSteeringAngle - lastSteerAngle) < steeringDelta)
-            {
-                angle = rawStickX * maxSteeringAngle;
-            }
-            else
-            {
-                angle = lastSteerAngle;
-            }
-        }
+        if (steeringWheel == null)
+            Debug.LogError("[SteeringWheelAnimator] steeringWheel is NOT assigned.");
         else
-        {
-            float steer = rawStickX;
-            angle = steer * maxSteeringAngle;
-            lastSteerAngle = angle;
-        }
+            baseLocalRotation = steeringWheel.localRotation; // ✅ store the tilt/original pose
     }
 
-    steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -angle);
-}
+    private void LateUpdate()
+    {
+        if (steeringWheel == null || input == null) return;
 
+        float targetAngle = input.Steer * maxSteeringAngle;
+        currentAngle = Mathf.Lerp(currentAngle, targetAngle, Time.deltaTime * rotationSmoothing);
+
+        Quaternion steerRot = rotateAxis switch
+        {
+            Axis.X => Quaternion.AngleAxis(-currentAngle, Vector3.right),
+            Axis.Y => Quaternion.AngleAxis(-currentAngle, Vector3.up),
+            _      => Quaternion.AngleAxis(-currentAngle, Vector3.forward),
+        };
+
+        // ✅ Preserve original tilt/orientation, apply steering on top
+        steeringWheel.localRotation = baseLocalRotation * steerRot;
+    }
+
+    // Optional: if some other script changes the wheel pose at runtime,
+    // call this to "re-capture" the base rotation.
+    public void RecalibrateBaseRotation()
+    {
+        if (steeringWheel != null)
+            baseLocalRotation = steeringWheel.localRotation;
+    }
 }

@@ -69,6 +69,7 @@ Input format:
 You will receive messages that contain:
 - GAME_EVENT: <eventName>
 - PLAYER_UTTERANCE: <optional last thing the player said or asked (may be empty)>
+- If you recieve an audio input file, treat it as the player saying something. Repeat back the question, and answer. If unclear, ask the player to repeat.
 
 You may also receive raw audio input from the player: treat it as what they just said.
 ";
@@ -351,62 +352,95 @@ You may also receive raw audio input from the player: treat it as what they just
         }
     }
 
+    // private async Task SendRequestAsync(PendingInstructorRequest req)
+    // {
+    //     // 1) Optional audio input (only if you’re actually using mic input)
+    //     if (req.playerAudioPcm16 != null && req.playerAudioPcm16.Length > 0)
+    //         await SendAudioInputAsync(req.playerAudioPcm16);
+
+    //     // 2) Text payload
+    //     string payloadText =
+    //         $"GAME_EVENT: {req.eventName}\n" +
+    //         $"PLAYER_UTTERANCE: {(string.IsNullOrEmpty(req.playerUtterance) ? "<none>" : req.playerUtterance)}\n";
+
+    //     var conversationItemCreate = new
+    //     {
+    //         type = "conversation.item.create",
+    //         item = new
+    //         {
+    //             type = "message",
+    //             role = "user",
+    //             content = new object[]
+    //             {
+    //                 new { type = "input_text", text = payloadText }
+    //             }
+    //         }
+    //     };
+
+    //     await SendJsonAsync(conversationItemCreate);
+
+    //     // 3) Ask for response
+    //     var responseCreate = new
+    //     {
+    //         type = "response.create",
+    //         response = new
+    //         {
+    //             modalities = new[] { "text", "audio" },
+    //             instructions = string.IsNullOrEmpty(req.extraInstruction) ? null : req.extraInstruction
+    //         }
+    //     };
+
+    //     _currentTextResponse.Clear();
+    //     await SendJsonAsync(responseCreate);
+    // }
+
     private async Task SendRequestAsync(PendingInstructorRequest req)
     {
-        // 1) Optional audio input (only if you’re actually using mic input)
-        if (req.playerAudioPcm16 != null && req.playerAudioPcm16.Length > 0)
+        bool hasAudio = req.playerAudioPcm16 != null && req.playerAudioPcm16.Length > 0;
+        bool isVoiceOnly = (req.eventName == "PlayerVoiceQuestion") && hasAudio && string.IsNullOrEmpty(req.playerUtterance);
+
+        if (hasAudio)
             await SendAudioInputAsync(req.playerAudioPcm16);
 
-        // 2) Text payload
-        string payloadText =
-            $"GAME_EVENT: {req.eventName}\n" +
-            $"PLAYER_UTTERANCE: {(string.IsNullOrEmpty(req.playerUtterance) ? "<none>" : req.playerUtterance)}\n";
-
-        var conversationItemCreate = new
+        // Only create a text item if NOT voice-only
+        if (!isVoiceOnly)
         {
-            type = "conversation.item.create",
-            item = new
+            string payloadText =
+                $"GAME_EVENT: {req.eventName}\n" +
+                $"PLAYER_UTTERANCE: {(string.IsNullOrEmpty(req.playerUtterance) ? "<none>" : req.playerUtterance)}\n";
+
+            await SendJsonAsync(new
             {
-                type = "message",
-                role = "user",
-                content = new object[]
+                type = "conversation.item.create",
+                item = new
                 {
-                    new { type = "input_text", text = payloadText }
+                    type = "message",
+                    role = "user",
+                    content = new object[]
+                    {
+                        new { type = "input_text", text = payloadText }
+                    }
                 }
-            }
-        };
+            });
+        }
 
-        await SendJsonAsync(conversationItemCreate);
-
-        // 3) Ask for response
-        var responseCreate = new
+        await SendJsonAsync(new
         {
             type = "response.create",
             response = new
             {
                 modalities = new[] { "text", "audio" },
-                instructions = string.IsNullOrEmpty(req.extraInstruction) ? null : req.extraInstruction
+                instructions =
+                    (string.IsNullOrEmpty(req.extraInstruction) ? "" : req.extraInstruction + "\n") +
+                    (isVoiceOnly
+                        ? "Use the latest audio input as what the player just said. If unclear, ask them to repeat in one short sentence."
+                        : "")
             }
-        };
+        });
 
         _currentTextResponse.Clear();
-        await SendJsonAsync(responseCreate);
     }
 
-
-
-
-    public void NotifyPlayerVoiceOnly(
-        byte[] playerAudioPcm16,
-        string extraInstruction = "Answer the player's question in 1–3 sentences.")
-    {
-        NotifyDrivingEvent(
-            eventName: "PlayerVoiceQuestion",
-            playerUtterance: null,
-            extraInstruction: extraInstruction,
-            playerAudioPcm16: playerAudioPcm16
-        );
-    }
 
     // ===== Audio input to Realtime =====
 
@@ -414,20 +448,14 @@ You may also receive raw audio input from the player: treat it as what they just
     {
         if (_socket == null || _socket.State != WebSocketState.Open) return;
 
-        var clearMsg = new { type = "input_audio.buffer.clear" };
-        await SendJsonAsync(clearMsg);
+        await SendJsonAsync(new { type = "input_audio_buffer.clear" });
 
         string base64 = Convert.ToBase64String(pcm16Audio);
-        var appendMsg = new
-        {
-            type = "input_audio.buffer.append",
-            audio = base64
-        };
-        await SendJsonAsync(appendMsg);
+        await SendJsonAsync(new { type = "input_audio_buffer.append", audio = base64 });
 
-        var commitMsg = new { type = "input_audio.buffer.commit" };
-        await SendJsonAsync(commitMsg);
+        await SendJsonAsync(new { type = "input_audio_buffer.commit" });
     }
+
 
     public static byte[] ConvertFloatToPcm16(float[] samples)
     {
@@ -528,7 +556,43 @@ You may also receive raw audio input from the player: treat it as what they just
         DebugLog("Receive loop ended.");
     }
 
+    public void NotifyPlayerVoiceOnly(byte[] playerAudioPcm16,
+        string extraInstruction = "Answer the player's question in 1–2 short sentences.")
+    {
+        if (!_isConnected)
+        {
+            DebugLog("NotifyPlayerVoiceOnly called but not connected.");
+            return;
+        }
+
+        // Voice should not be rate-limited like violations. You can add a small cooldown if needed.
+        var req = new PendingInstructorRequest
+        {
+            eventName = "PlayerVoiceQuestion",
+            playerUtterance = null,
+            extraInstruction = extraInstruction,
+            playerAudioPcm16 = playerAudioPcm16,
+            enqueuedAt = Time.unscaledTime
+        };
+
+        lock (_queueLock)
+        {
+            if (_requestQueue.Count >= maxQueueSize)
+            {
+                if (dropOldestWhenFull) _requestQueue.Dequeue();
+                else return;
+            }
+            _requestQueue.Enqueue(req);
+        }
+
+        EnsureQueuePumpRunning();
+    }
+
+
     // ===== Handle server events =====
+
+    private readonly StringBuilder _currentTranscript = new StringBuilder();
+    public event Action<string> OnMicTranscript;
 
     private void HandleServerEvent(string messageStr)
     {
@@ -614,6 +678,32 @@ You may also receive raw audio input from the player: treat it as what they just
                     OnInstructorError?.Invoke(errorMessage));
                 break;
             }
+
+            case "conversation.item.input_audio_transcription.delta":
+            {
+                // whisper-1 often sends whole transcript in delta too
+                string delta = msg.Value<string>("delta") ?? "";
+                if (!string.IsNullOrEmpty(delta))
+                    DebugLog("[Mic transcript Δ] " + delta);
+                break;
+            }
+
+            case "conversation.item.input_audio_transcription.completed":
+            {
+                string transcript = msg.Value<string>("transcript") ?? "";
+                DebugLog("[Mic transcript DONE] " + transcript);
+                break;
+            }
+
+            case "conversation.item.input_audio_transcription.failed":
+            {
+                // This is SUPER useful: often means your project doesn’t have access to the transcribe model
+                DebugLog("[Mic transcript FAILED] " + msg.ToString(Newtonsoft.Json.Formatting.None));
+                break;
+            }
+
+
+
 
             default:
                 break;

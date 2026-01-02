@@ -3,7 +3,7 @@ using UnityEngine;
 public enum StudyMode
 {
     NoAI = 0,
-    AI = 1
+    AI = 1,
 }
 
 public class StudyConditionManager : MonoBehaviour

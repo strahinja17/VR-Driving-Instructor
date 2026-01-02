@@ -12,12 +12,12 @@ public class LaneMonitor : MonoBehaviour
 
     public bool laneExcursion;             // entering oncoming lane
     public bool improperLaneChange;        // adjacent lane entered without blinker
-    public bool wrongLaneAtEntry;
-    public bool wrongLaneAtExit;
 
     public bool laneChangeInProgress;
 
     public bool inExitRegion;
+
+    public LaneChangeCheckArmer laneChangeChecks;
 
     private HashSet<LaneZone> activeZones = new HashSet<LaneZone>();
 
@@ -33,96 +33,38 @@ public class LaneMonitor : MonoBehaviour
     void Update()
     {
         EvaluateZones();
+        // Debug.Log("[LaneMonitor] Active zones: " + activeZones.Count);
     }
 
-    void OnTriggerEnter(Collider other)
+    public void ProbeEnter(Collider other)
     {
         LaneZone zone = other.GetComponent<LaneZone>();
-        if (zone == null || zone.parentSpline == null)
-            return;
+        if (zone == null) zone = other.GetComponentInParent<LaneZone>();
+        if (zone == null || zone.parentSpline == null) return;
 
         activeZones.Add(zone);
-
-        // ---------------------------------------------------
-        // (1) ENTRY LOGIC — when the player enters a lane segment
-        // ---------------------------------------------------
         if (zone.isEntry)
         {
-            if (!hasEnteredBoundLane)
-            {
-                // Bind to the first lane entered
-                boundLane = zone.parentSpline;
-                hasEnteredBoundLane = true;
-                Debug.Log("[LaneMonitor] Bound to lane: " + boundLane.name);
-            }
-            else
-            {
-                // // Entering an entry box from a different lane
-                // if (inExitRegion)
-                // {
-                //     // We're exiting the old lane and entering a new one:
-                //     // treat as lane handoff, NOT as wrong entry.
-                    boundLane = zone.parentSpline;
-                    inExitRegion = false;
-                    Debug.Log("[LaneMonitor] Lane handoff at intersection. New bound lane: " + boundLane.name);
-                // }
-                // else
-                // {
-                //     // Not in exit region → this really is a wrong entry
-                //     wrongLaneAtEntry = true;
-                //     Debug.Log("[LaneMonitor] WRONG entry: entered lane " + zone.parentSpline.name);
-                // }
-            }
+            boundLane = zone.parentSpline;
+            inExitRegion = false;
+            hasEnteredBoundLane = true;
+            Debug.Log("[LaneMonitor] Bound to lane: " + boundLane.name);
         }
-        else
+         if (zone.isExit)
         {
-            // Entering a non-entry zone BEFORE hitting the real entry
-            if (!hasEnteredBoundLane)
-            {
-                wrongLaneAtEntry = true;
-                Debug.Log("[LaneMonitor] WRONG lane before entry: " + zone.parentSpline.name);
-                if(AIMode) {
-                    DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                    eventName: "LaneWarning",
-                    playerUtterance: null,
-                    extraInstruction: "Tell the player to be careful when entering a new lane in the intersection, not to cut accross the opposing lane, few words!!");
-                }
-            }
-        }
-
-        // ---------------------------------------------------
-        // (2) EXIT LOGIC — exiting via the wrong lane
-        // ---------------------------------------------------
-        if (zone.isExit)
-        {
-            if (zone.parentSpline != boundLane)
-            {
-                wrongLaneAtExit = true;
-                Debug.Log("[LaneMonitor] WRONG EXIT: " + zone.parentSpline.name);
-                if (AIMode) {
-                    DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                    eventName: "LaneWarning",
-                    playerUtterance: null,
-                    extraInstruction: "Tell the player to be careful when exiting a lane in the intersection, not to cut accross the opposing lane, few words!!");
-                }
-            
-            }
-            else
-            {
-                inExitRegion = true;
-                Debug.Log("[LaneMonitor] Exit region of: " + boundLane.name);
-            }
+            inExitRegion = true;
+            Debug.Log("[LaneMonitor] Exit region of: " + boundLane.name != null ? boundLane.name : "null");
         }
     }
 
-    void OnTriggerExit(Collider other)
+    public void ProbeExit(Collider other)
     {
         LaneZone zone = other.GetComponent<LaneZone>();
+        if (zone == null) zone = other.GetComponentInParent<LaneZone>();
         if (zone == null) return;
 
         activeZones.Remove(zone);
 
-        // If this zone belongs to the current bound lane, check if we left it completely
         if (boundLane != null && zone.parentSpline == boundLane)
         {
             bool stillInBoundLane = false;
@@ -158,19 +100,143 @@ public class LaneMonitor : MonoBehaviour
     }
 
 
+    // void OnTriggerEnter(Collider other)
+    // {
+    //     LaneZone zone = other.GetComponent<LaneZone>();
+    //     if (zone == null || zone.parentSpline == null)
+    //         return;
+
+    //     activeZones.Add(zone);
+
+    //     // ---------------------------------------------------
+    //     // (1) ENTRY LOGIC — when the player enters a lane segment
+    //     // ---------------------------------------------------
+    //     if (zone.isEntry)
+    //     {
+    //         boundLane = zone.parentSpline;
+    //         inExitRegion = false;
+    //         hasEnteredBoundLane = true;
+    //         Debug.Log("[LaneMonitor] Bound to lane: " + boundLane.name);
+
+    //         // if (!hasEnteredBoundLane)
+    //         // {
+    //         //     // Bind to the first lane entered
+    //         //     boundLane = zone.parentSpline;
+    //         //     hasEnteredBoundLane = true;
+    //         //     Debug.Log("[LaneMonitor] Bound to lane: " + boundLane.name);
+    //         // }
+    //         // else
+    //         // {
+    //             // // Entering an entry box from a different lane
+    //             // if (inExitRegion)
+    //             // {
+    //             //     // We're exiting the old lane and entering a new one:
+    //             //     // treat as lane handoff, NOT as wrong entry.
+    //                 // boundLane = zone.parentSpline;
+    //                 // inExitRegion = false;
+    //                 // Debug.Log("[LaneMonitor] Lane handoff at intersection. New bound lane: " + boundLane.name);
+    //             // }
+    //             // else
+    //             // {
+    //             //     // Not in exit region → this really is a wrong entry
+    //             //     wrongLaneAtEntry = true;
+    //             //     Debug.Log("[LaneMonitor] WRONG entry: entered lane " + zone.parentSpline.name);
+    //             // }
+    //         // }
+    //     }
+    //     // else
+    //     // {
+    //     //     // Entering a non-entry zone BEFORE hitting the real entry
+    //     //     if (!hasEnteredBoundLane)
+    //     //     {
+    //     //         wrongLaneAtEntry = true;
+    //     //         Debug.Log("[LaneMonitor] WRONG lane before entry: " + zone.parentSpline.name);
+    //     //         if(AIMode) {
+    //     //             DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+    //     //             eventName: "LaneWarning",
+    //     //             playerUtterance: null,
+    //     //             extraInstruction: "Tell the player to be careful when entering a new lane in the intersection, not to cut accross the opposing lane, few words!!");
+    //     //         }
+    //     //     }
+    //     // }
+
+    //     // ---------------------------------------------------
+    //     // (2) EXIT LOGIC — exiting via the wrong lane
+    //     // ---------------------------------------------------
+    //     if (zone.isExit)
+    //     {
+    //         // if (zone.parentSpline != boundLane)
+    //         // {
+    //         //     wrongLaneAtExit = true;
+    //         //     Debug.Log("[LaneMonitor] WRONG EXIT: " + zone.parentSpline.name);
+    //         //     if (AIMode) {
+    //         //         DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+    //         //         eventName: "LaneWarning",
+    //         //         playerUtterance: null,
+    //         //         extraInstruction: "Tell the player to be careful when exiting a lane in the intersection, not to cut accross the opposing lane, few words!!");
+    //         //     }
+            
+    //         // }
+    //         // else
+    //         // {
+    //             inExitRegion = true;
+    //             Debug.Log("[LaneMonitor] Exit region of: " + boundLane.name != null ? boundLane.name : "null");
+    //         // }
+    //     }
+    // }
+
+    // void OnTriggerExit(Collider other)
+    // {
+    //     LaneZone zone = other.GetComponent<LaneZone>();
+    //     if (zone == null) return;
+
+    //     activeZones.Remove(zone);
+
+    //     // If this zone belongs to the current bound lane, check if we left it completely
+    //     if (boundLane != null && zone.parentSpline == boundLane)
+    //     {
+    //         bool stillInBoundLane = false;
+
+    //         foreach (var z in activeZones)
+    //         {
+    //             if (z.parentSpline == boundLane)
+    //             {
+    //                 stillInBoundLane = true;
+    //                 break;
+    //             }
+    //         }
+
+    //         // We've left the LAST zone of the bound lane
+    //         if (!stillInBoundLane)
+    //         {
+    //             // And we were exiting that lane (either via an exit zone or exit region)
+    //             if (zone.isExit || inExitRegion)
+    //             {
+    //                 Debug.Log("[LaneMonitor] Fully exited lane " + boundLane.name + " → unbinding.");
+    //                 boundLane = null;
+    //                 hasEnteredBoundLane = false;
+    //                 inExitRegion = false;
+    //             }
+    //         }
+    //     }
+
+    //     // Keep this so inExitRegion only applies while you're actually inside the exit box
+    //     if (zone.isExit && zone.parentSpline == boundLane)
+    //     {
+    //         inExitRegion = false;
+    //     }
+    // }
+
+
     void EvaluateZones()
     {
         HashSet<LaneSpline> overlapping = new HashSet<LaneSpline>();
-        HashSet<LaneSpline> adjacentHits = new HashSet<LaneSpline>();
         // ZoneType situation = ZoneType.None;
 
         foreach (var zone in activeZones)
         {
             if (zone.parentSpline != null)
                 overlapping.Add(zone.parentSpline);
-
-            if (zone.adjacentLane != null)
-                adjacentHits.Add(zone.adjacentLane);
         }
 
         // ---------------------------------------------------
@@ -178,20 +244,20 @@ public class LaneMonitor : MonoBehaviour
         // ---------------------------------------------------
         // If NOT bound yet and overlapping multiple lanes,
         // choose the one that is NOT the wrongEntryLane.
-        if (!hasEnteredBoundLane && overlapping.Count > 1)
-        {
-            foreach (var lane in overlapping)
-            {
-                if (lane != wrongLaneAtEntry)
-                {
-                    boundLane = lane;
-                    hasEnteredBoundLane = true;
-                    wrongLaneAtEntry = false;
-                    Debug.Log("[LaneMonitor] Auto-bound to corrected lane: " + boundLane.name);
-                    break;
-                }
-            }
-        }
+        // if (!hasEnteredBoundLane && overlapping.Count > 1)
+        // {
+        //     foreach (var lane in overlapping)
+        //     {
+        //         if (lane != wrongLaneAtEntry)
+        //         {
+        //             boundLane = lane;
+        //             hasEnteredBoundLane = true;
+        //             wrongLaneAtEntry = false;
+        //             Debug.Log("[LaneMonitor] Auto-bound to corrected lane: " + boundLane.name);
+        //             break;
+        //         }
+        //     }
+        // }
 
         // Now re-evaluate excursion only AFTER binding
         laneExcursion = (hasEnteredBoundLane && overlapping.Count > 1 && !inExitRegion);
@@ -241,9 +307,50 @@ public class LaneMonitor : MonoBehaviour
                     }
                     else
                     {
-                        properLaneChange = true;
-                        laneChangeInProgress = true;
-                        Debug.Log("[LaneMonitor] Proper lane change initiated towards " + target.name);
+
+                        bool checksOk = true;
+                        bool missingMirror = false;
+                        bool missingShoulder = false;
+
+                        if (laneChangeChecks != null)
+                        {
+                            var res = laneChangeChecks.EvaluateForLaneChange(blinker.leftOn);
+                            checksOk = res.passed;
+                            missingMirror = res.missingMirror;
+                            missingShoulder = res.missingShoulder;
+                        }
+
+                        if (!checksOk)
+                        {
+                            improperLaneChange = true;
+                            Debug.Log($"[LaneMonitor] Improper lane change: missing checks. mirrorMissing={missingMirror} shoulderMissing={missingShoulder}");
+
+                            if (AIMode)
+                            {
+                                // Keep it short. You can branch messaging based on what was missing.
+                                string instr =
+                                    missingMirror && missingShoulder ? "Tell the driver to check the mirror AND shoulder before changing lanes, very briefly." :
+                                    missingMirror ? "Tell the driver to check the mirror before changing lanes, very briefly." :
+                                    "Tell the driver to do a shoulder check before changing lanes, very briefly.";
+
+                                DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
+                                    eventName: "LaneChange",
+                                    playerUtterance: null,
+                                    extraInstruction: instr
+                                );
+                            }
+                            else
+                            {
+                                // Optional: play scripted clip here if you have one
+                                // GlobalInstructorAudio.Play(missingCheckClip);
+                            }
+                        } 
+                            else
+                        {
+                            properLaneChange = true;
+                            laneChangeInProgress = true;
+                            Debug.Log("[LaneMonitor] Proper lane change initiated towards " + target.name);
+                        }
                     }
                 }
             }
@@ -280,6 +387,8 @@ public class LaneMonitor : MonoBehaviour
             {
                 GlobalInstructorAudio.Play(laneExcur);
             }
+
+            Debug.Log("[LaneMonitor] Lane excursion!");
         }
     }
 

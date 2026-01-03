@@ -303,6 +303,8 @@ public class LaneMonitor : MonoBehaviour
                                 playerUtterance: null,
                                 extraInstruction: "Tell the player to always use blinkers properlly when changing lanes, in very few words!!");
                         }
+                        StudySessionManager.Instance.RegisterWarning("LaneChange-Blinkers");
+
 
                     }
                     else
@@ -344,6 +346,8 @@ public class LaneMonitor : MonoBehaviour
                                 // Optional: play scripted clip here if you have one
                                 // GlobalInstructorAudio.Play(missingCheckClip);
                             }
+
+                            StudySessionManager.Instance.RegisterWarning("LaneChange-Mirror/Shoulder");
                         } 
                             else
                         {
@@ -387,6 +391,7 @@ public class LaneMonitor : MonoBehaviour
             {
                 GlobalInstructorAudio.Play(laneExcur);
             }
+            StudySessionManager.Instance.RegisterWarning("LaneExcursion");
 
             Debug.Log("[LaneMonitor] Lane excursion!");
         }

@@ -87,6 +87,8 @@ public class CollisionReporter : MonoBehaviour
         {
             GlobalInstructorAudio.Play(collisionAudio);
         }
+        
+        StudySessionManager.Instance.RegisterWarning("Collision");
     }
 
     private string GetObjectTypeFromTag(string tag)

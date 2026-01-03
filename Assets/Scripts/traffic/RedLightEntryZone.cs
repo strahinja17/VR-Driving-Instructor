@@ -62,6 +62,7 @@ public class RedLightEntryZone : MonoBehaviour
             {
                 GlobalInstructorAudio.Play(redLightVio);
             }
+            StudySessionManager.Instance.RegisterWarning("RedLight");
         }
     }
 }

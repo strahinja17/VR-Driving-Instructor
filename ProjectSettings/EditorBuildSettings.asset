@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Starting_Scenario.unity
     guid: 013e0b9f148cb4d0aa88c4725922511b
+  - enabled: 1
+    path: Assets/Scenes/GoodJob.unity
+    guid: 3c051da3db1eb74429f6e78eed803ec7
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: bfa1182bd221b4ca89619141f66f1260, type: 2}
     Unity.XR.WindowsMR.Settings: {fileID: 11400000, guid: dc5a169419fa04987b057f65238cf3ba, type: 2}

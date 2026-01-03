@@ -45,7 +45,7 @@ public class TelemetryManager : MonoBehaviour
         lastTime = Time.time;
 
         // Check speed limit
-        if (speed > speedLimit + 3f)
+        if (speed > speedLimit + 5f)
         {
             // Debug.LogWarning($"⚠️ Speeding! Current: {speed:F1} km/h | Limit: {speedLimit}");
 
@@ -60,13 +60,14 @@ public class TelemetryManager : MonoBehaviour
             {
                 GlobalInstructorAudio.Play(speeding);
             }
+            StudySessionManager.Instance.RegisterWarning("Speeding");
         }
 
         // Check slip for each wheel
-        CheckWheelSlip(frontLeft, "Front Left");
-        CheckWheelSlip(frontRight, "Front Right");
-        CheckWheelSlip(rearLeft, "Rear Left");
-        CheckWheelSlip(rearRight, "Rear Right");
+        // CheckWheelSlip(frontLeft, "Front Left");
+        // CheckWheelSlip(frontRight, "Front Right");
+        // CheckWheelSlip(rearLeft, "Rear Left");
+        // CheckWheelSlip(rearRight, "Rear Right");
     }
 
     void CheckWheelSlip(WheelCollider wheel, string name)

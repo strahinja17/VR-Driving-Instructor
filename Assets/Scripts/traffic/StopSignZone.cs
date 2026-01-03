@@ -89,6 +89,7 @@ public class StopSignZone : MonoBehaviour
             {
                 GlobalInstructorAudio.Play(stopVio);
             }
+            StudySessionManager.Instance.RegisterWarning("StopSign");
         }
 
         minSpeedInside = float.MaxValue;

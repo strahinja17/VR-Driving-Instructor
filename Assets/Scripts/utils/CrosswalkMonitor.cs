@@ -28,6 +28,7 @@ public class CrosswalkMonitor : MonoBehaviour
         if (pedestriansInside > 0 && kmh > dangerSpeedKmh)
         {
             SendAlert("Dangerous approach: pedestrian in crosswalk.");
+            StudySessionManager.Instance.RegisterWarning("CrosswalkSpeed");
         }
 
         if (pedestriansInside > 0 && kmh < 6f)

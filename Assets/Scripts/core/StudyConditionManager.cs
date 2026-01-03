@@ -4,7 +4,9 @@ public enum StudyMode
 {
     NoAI = 0,
     AI = 1,
+    TestAI = 2
 }
+
 
 public class StudyConditionManager : MonoBehaviour
 {
@@ -13,17 +15,22 @@ public class StudyConditionManager : MonoBehaviour
     [Header("Mode")]
     public StudyMode mode = StudyMode.AI;
 
+    public bool IsAIEnabled => mode == StudyMode.AI || mode == StudyMode.TestAI;
+    public bool ShouldCollectData => mode != StudyMode.TestAI;
+
     [Header("LLM Hub (optional)")]
     [Tooltip("Drag your DrivingAIInstructorHub component here.")]
     public Behaviour llmInstructorHub;
+
+    [Header("Participant")]
+    public string nickname = "";
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
-        ApplyMode();
+        SetMode(StudySessionManager.Instance.mode);
     }
 
     public void SetMode(StudyMode newMode)
@@ -37,8 +44,6 @@ public class StudyConditionManager : MonoBehaviour
     {
         SetMode(mode == StudyMode.AI ? StudyMode.NoAI : StudyMode.AI);
     }
-
-    public bool IsAIEnabled => mode == StudyMode.AI;
 
     private void ApplyMode()
     {

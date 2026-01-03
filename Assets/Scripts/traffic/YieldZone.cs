@@ -92,6 +92,7 @@ public class YieldZone : MonoBehaviour
             {
                 GlobalInstructorAudio.Play(yieldVio);
             }
+            StudySessionManager.Instance.RegisterWarning("YieldSign");
         }
 
         minSpeedInside = float.MaxValue;

@@ -35,17 +35,47 @@ public class CarInputHub : MonoBehaviour
 
     private void OnEnable()
     {
-        controls.Enable();
+        controls.Driving.Enable(); // enables just the map that matters
         controls.Driving.ReverseButton.performed += OnReversePerformed;
         controls.Driving.Recenter.performed += OnRecenterPerformed;
     }
 
     private void OnDisable()
     {
+        ShutdownInput();
+    }
+
+     private void OnDestroy()
+    {
+        ShutdownInput();
+    }
+
+    private void OnApplicationQuit()
+    {
+        ShutdownInput();
+    }
+
+    public void ShutdownInput()
+    {
+        if (controls == null) return;
+
+        // Unhook first
         controls.Driving.ReverseButton.performed -= OnReversePerformed;
         controls.Driving.Recenter.performed -= OnRecenterPerformed;
+
+        // Disable map (the assert checks this)
+        if (controls.Driving.enabled)
+            controls.Driving.Disable();
+
+        // Disable asset too (extra safety)
         controls.Disable();
+
+        // Dispose
+        controls.Dispose();
+        controls = null;
     }
+
+
 
     private void OnReversePerformed(InputAction.CallbackContext ctx)
     {

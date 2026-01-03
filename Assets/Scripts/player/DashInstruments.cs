@@ -23,7 +23,7 @@ public class DashInstruments : MonoBehaviour
 
     private Rigidbody carRigidbody; // assign this from your car controller
 
-    private DrivingControlls controls;
+    private CarInputHub inputHub;
 
     private float speedKmh;    // set this from your car controller
     private float rpm;         // we’ll compute this below
@@ -52,20 +52,15 @@ public class DashInstruments : MonoBehaviour
     {
         if (carRigidbody == null) carRigidbody = GetComponent<Rigidbody>();
         
-        controls = new DrivingControlls();
-        controls.Enable();
+        if (inputHub == null)
+            inputHub = GetComponent<CarInputHub>();
     }
 
     void Update()
     {
         speedKmh = carRigidbody.linearVelocity.magnitude * 3.6f;
         
-        float rawThrottle = controls.Driving.Throttle.ReadValue<float>();
-
-        // Assume: 1 = no throttle, -1 = full throttle (common for triggers)
-        // Map -1..1 -> 0..1 where 0 = no gas, 1 = full gas
-        throttle01 = Mathf.InverseLerp(-1f, 1f, rawThrottle);
-
+        throttle01 = inputHub != null ? inputHub.Throttle : 0f;
 
         // Speed needle
         if (speedNeedle != null)

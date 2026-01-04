@@ -25,6 +25,8 @@ public class LaneMonitor : MonoBehaviour
 
     public AudioClip laneExcur;
 
+    private float cooldown = 0f;
+
     void Start()
     {
         AIMode = StudyConditionManager.Instance.IsAIEnabled;
@@ -379,9 +381,10 @@ public class LaneMonitor : MonoBehaviour
             }
         }
 
-        if (laneExcursion && !properLaneChange)
+        if (laneExcursion && !properLaneChange && Time.time >= cooldown)
         {
-            // Debug.Log("[LaneMonitor] LANE EXCURSION!");
+            cooldown = Time.time + 5f;
+            
             if (AIMode) {
                 DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
                                 eventName: "LaneWarning",

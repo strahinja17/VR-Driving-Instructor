@@ -70,10 +70,10 @@ public class DirectionTrigger : MonoBehaviour
             if (instructorHub != null && instructorHub.enabled)
             {
                 string prompt =
-                    $"Give the driver navigation directions and comment on the upcoming traffic situation now.\n" +
+                    $"Give the driver navigation directions.\n" +
                     $"Directions: {aiDirection} \n" +
-                    $"Add brief helpful context specific to this spot:\n{aiContext}\n" +
-                    $"Constraints: 2 sentences, calm coaching tone, actionable, no rambling.";
+                    $"Add brief context specific to this spot:\n{aiContext}\n" +
+                    $"Constraints: 1 sentences, calm coaching tone, DON'T MAKE UP DIRECTIONS! STRICTLY ADHERE TO 'Directions: {aiDirection}' DON'T MAKE UP DISTANCES!";
 
                 
                 DrivingAIInstructorHub.Instance.NotifyDrivingEvent(

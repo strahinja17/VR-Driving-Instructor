@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,11 +19,30 @@ public class GlobalInstructorAudio : MonoBehaviour
     [Tooltip("Global volume multiplier.")]
     [Range(0f, 1f)] public float volume = 1f;
 
+    [Header("Anti-spam / dedupe")]
+    [Tooltip("Minimum seconds before the SAME clip is allowed to be queued/played again.")]
+    public float minTimeBetweenSameClip = 4f;
+
+    [Tooltip("Hard cap to prevent runaway queue growth if something spams Play().")]
+    public int maxQueueSize = 12;
+
+    [Tooltip("If true, don't enqueue a clip if it's already waiting in the queue.")]
+    public bool avoidDuplicatesAlreadyQueued = true;
+
     // Internal queue
     private readonly Queue<AudioClip> _queue = new Queue<AudioClip>();
 
     private float _nextAllowedStartTime = 0f;
-    private bool _isPlayingCoroutine;
+    private Coroutine _pumpRoutine;
+
+    // Track when each clip is next allowed to be ENQUEUED/PLAYED
+    private readonly Dictionary<int, float> _nextAllowedTimeByClipId = new Dictionary<int, float>(64);
+
+    // For quick duplicate checks without iterating the whole queue repeatedly
+    private readonly HashSet<int> _queuedClipIds = new HashSet<int>();
+
+    // Track what was last started (not just last requested)
+    private int _lastStartedClipId = -1;
 
     private void Awake()
     {
@@ -49,7 +69,6 @@ public class GlobalInstructorAudio : MonoBehaviour
 
     /// <summary>
     /// Enqueue or play an instructor audio clip globally.
-    /// Never interrupts by default.
     /// </summary>
     public static void Play(AudioClip clip)
     {
@@ -61,32 +80,78 @@ public class GlobalInstructorAudio : MonoBehaviour
 
         if (_instance == null)
         {
-            Debug.LogError("[GlobalInstructorAudio] No instance in scene. Add GlobalInstructorAudio to a GameObject once.");
+            Debug.LogError("[GlobalInstructorAudio] No instance in scene. Add GlobalInstructorAudio once.");
             return;
         }
 
-        if (_instance.useQueue)
+        _instance.PlayInternal(clip);
+    }
+
+    private void PlayInternal(AudioClip clip)
+    {
+        if (audioSource == null) return;
+
+        int id = clip.GetInstanceID();
+        float now = Time.unscaledTime;
+
+        // Anti-spam: per-clip cooldown for requests (applies to both queue and immediate)
+        if (_nextAllowedTimeByClipId.TryGetValue(id, out float nextAllowed) && now < nextAllowed)
         {
-            _instance._queue.Enqueue(clip);
-            _instance.TryStartPump();
+            // Debug.Log($"[GlobalInstructorAudio] Ignored (clip cooldown): {clip.name}");
+            return;
+        }
+
+        // Optional: don't enqueue if already queued
+        if (useQueue && avoidDuplicatesAlreadyQueued && _queuedClipIds.Contains(id))
+        {
+            // Still update cooldown so callers spamming don't keep checking
+            _nextAllowedTimeByClipId[id] = now + minTimeBetweenSameClip;
+            return;
+        }
+
+        // Also avoid re-requesting the clip that just started very recently
+        if (_lastStartedClipId == id && now < nextAllowed)
+            return;
+
+        // Reserve cooldown immediately (prevents per-frame queue spam)
+        _nextAllowedTimeByClipId[id] = now + minTimeBetweenSameClip;
+
+        if (useQueue)
+        {
+            // Cap queue size
+            if (_queue.Count >= maxQueueSize)
+            {
+                // Drop newest request (or you could drop oldest; this is safest)
+                // Debug.LogWarning("[GlobalInstructorAudio] Queue full, dropping clip: " + clip.name);
+                return;
+            }
+
+            _queue.Enqueue(clip);
+            _queuedClipIds.Add(id);
+            TryStartPump();
         }
         else
         {
-            // "Hard no interrupt + cooldown" mode: only play if idle and cooldown passed
-            _instance.TryPlayImmediate(clip);
+            TryPlayImmediate(clip);
         }
     }
 
-    /// <summary>
-    /// Stops audio and clears the queue.
-    /// </summary>
+    /// <summary>Stops audio and clears the queue.</summary>
     public static void StopAndClear()
     {
         if (_instance == null) return;
+
         _instance._queue.Clear();
+        _instance._queuedClipIds.Clear();
+
         if (_instance.audioSource != null)
             _instance.audioSource.Stop();
-        _instance._isPlayingCoroutine = false;
+
+        if (_instance._pumpRoutine != null)
+        {
+            _instance.StopCoroutine(_instance._pumpRoutine);
+            _instance._pumpRoutine = null;
+        }
     }
 
     public static bool IsPlaying()
@@ -98,8 +163,8 @@ public class GlobalInstructorAudio : MonoBehaviour
 
     private void TryStartPump()
     {
-        if (_isPlayingCoroutine) return;
-        StartCoroutine(PumpQueue());
+        if (_pumpRoutine != null) return;
+        _pumpRoutine = StartCoroutine(PumpQueue());
     }
 
     private void TryPlayImmediate(AudioClip clip)
@@ -110,53 +175,50 @@ public class GlobalInstructorAudio : MonoBehaviour
         if (audioSource.isPlaying) return;
 
         // Enforce global cooldown between starts
-        if (Time.time < _nextAllowedStartTime) return;
+        float now = Time.unscaledTime;
+        if (now < _nextAllowedStartTime) return;
 
+        StartClip(clip);
+    }
+
+    private void StartClip(AudioClip clip)
+    {
         audioSource.volume = volume;
         audioSource.PlayOneShot(clip);
 
-        _nextAllowedStartTime = Time.time + minSecondsBetweenStarts;
+        _lastStartedClipId = clip.GetInstanceID();
+        _nextAllowedStartTime = Time.unscaledTime + minSecondsBetweenStarts;
     }
 
-    private System.Collections.IEnumerator PumpQueue()
+    private IEnumerator PumpQueue()
     {
-        _isPlayingCoroutine = true;
-
         while (true)
         {
-            if (audioSource == null)
-                break;
+            if (audioSource == null) break;
 
-            // Wait until audio finishes if currently playing
             if (audioSource.isPlaying)
             {
                 yield return null;
                 continue;
             }
 
-            // Nothing queued -> stop pumping
-            if (_queue.Count == 0)
-                break;
+            if (_queue.Count == 0) break;
 
-            // Enforce cooldown between clip starts
-            if (Time.time < _nextAllowedStartTime)
+            if (Time.unscaledTime < _nextAllowedStartTime)
             {
                 yield return null;
                 continue;
             }
 
             var next = _queue.Dequeue();
+            _queuedClipIds.Remove(next.GetInstanceID());
 
-            audioSource.volume = volume;
-            audioSource.PlayOneShot(next);
+            StartClip(next);
 
-            // Cooldown starts now
-            _nextAllowedStartTime = Time.time + minSecondsBetweenStarts;
-
-            // Wait until finished (PlayOneShot sets isPlaying true during playback)
+            // Let isPlaying flip properly
             yield return null;
         }
 
-        _isPlayingCoroutine = false;
+        _pumpRoutine = null;
     }
 }

@@ -28,7 +28,7 @@ public class DrivingAIInstructorHub : MonoBehaviour
     [SerializeField] private string model = "gpt-realtime-mini";
 
     [Tooltip("Voice name, e.g. alloy, verse, ember")]
-    [SerializeField] private string voice = "ash";
+    [SerializeField] private string voice = "echo";
 
     [Header("Audio Settings")]
     [Tooltip("Sample rate of PCM16 audio you send as input (must match your mic capture).")]
@@ -60,18 +60,18 @@ Goals:
 - Use the fact that you're an LLM and have the entire convo as context, when you see a pattern or something that can be inferred from the conversation, mention it briefly.
 
 Rules:
-- Respond in short 1–2 sentence bursts unless explicitly asked for a detailed explanation. This is a hard limit!!
+- Respond in short 1 sentence bursts unless explicitly asked for a detailed explanation. This is a hard limit!! You can only speak for 5-8 seconds!!
 - Speak in the first person to the player (reffer to player with 'you'), not third person.
 - Never mention that you are an AI or a language model.
-- If the situation indicates imminent danger, be firm and immediate (DON'T USE THE WORD 'WARNING').
+- If the situation indicates imminent danger, be firm and immediate.
+- Directions are ABSOLUTE! NEVER MAKE UP DIRECTIONS OR DISTANCES, READ THEM FROM THE PROMPT VERBATIM!
+- DON'T USE THE WORD 'WARNING' OR 'DIRECTION', WHEN ANOUNCING SOMETHING IN A SENTENCE! 
 
 Input format:
 You will receive messages that contain:
 - GAME_EVENT: <eventName>
-- PLAYER_UTTERANCE: <optional last thing the player said or asked (may be empty)>
 - If you recieve an audio input file, treat it as the player saying something. Repeat back the question, and answer. If unclear, ask the player to repeat.
-
-You may also receive raw audio input from the player: treat it as what they just said.
+- You may also receive raw audio input from the player: treat it as what they just said.
 ";
 
     [Header("Debug")]
@@ -107,7 +107,6 @@ You may also receive raw audio input from the player: treat it as what they just
     private class PendingInstructorRequest
     {
         public string eventName;
-        public string playerUtterance;
         public string extraInstruction;
         public byte[] playerAudioPcm16;
         public float enqueuedAt;
@@ -211,7 +210,7 @@ You may also receive raw audio input from the player: treat it as what they just
                     input_audio_format = "pcm16",
                     output_audio_format = "pcm16",
                     voice = voice,
-                    temperature = 0.6,
+                    temperature = 0.2,
                     turn_detection = (object)null,
                     input_audio_transcription = new
                     {
@@ -237,8 +236,8 @@ You may also receive raw audio input from the player: treat it as what they just
 
     public void NotifyDrivingEvent(
         string eventName,
-        string playerUtterance = null,
         string extraInstruction = null,
+        string playerUtterance = null,
         byte[] playerAudioPcm16 = null)
     {
         if (!_isConnected)
@@ -274,7 +273,6 @@ You may also receive raw audio input from the player: treat it as what they just
         var req = new PendingInstructorRequest
         {
             eventName = eventName,
-            playerUtterance = playerUtterance,
             extraInstruction = extraInstruction,
             playerAudioPcm16 = playerAudioPcm16,
             enqueuedAt = now
@@ -352,52 +350,10 @@ You may also receive raw audio input from the player: treat it as what they just
         }
     }
 
-    // private async Task SendRequestAsync(PendingInstructorRequest req)
-    // {
-    //     // 1) Optional audio input (only if you’re actually using mic input)
-    //     if (req.playerAudioPcm16 != null && req.playerAudioPcm16.Length > 0)
-    //         await SendAudioInputAsync(req.playerAudioPcm16);
-
-    //     // 2) Text payload
-    //     string payloadText =
-    //         $"GAME_EVENT: {req.eventName}\n" +
-    //         $"PLAYER_UTTERANCE: {(string.IsNullOrEmpty(req.playerUtterance) ? "<none>" : req.playerUtterance)}\n";
-
-    //     var conversationItemCreate = new
-    //     {
-    //         type = "conversation.item.create",
-    //         item = new
-    //         {
-    //             type = "message",
-    //             role = "user",
-    //             content = new object[]
-    //             {
-    //                 new { type = "input_text", text = payloadText }
-    //             }
-    //         }
-    //     };
-
-    //     await SendJsonAsync(conversationItemCreate);
-
-    //     // 3) Ask for response
-    //     var responseCreate = new
-    //     {
-    //         type = "response.create",
-    //         response = new
-    //         {
-    //             modalities = new[] { "text", "audio" },
-    //             instructions = string.IsNullOrEmpty(req.extraInstruction) ? null : req.extraInstruction
-    //         }
-    //     };
-
-    //     _currentTextResponse.Clear();
-    //     await SendJsonAsync(responseCreate);
-    // }
-
     private async Task SendRequestAsync(PendingInstructorRequest req)
     {
         bool hasAudio = req.playerAudioPcm16 != null && req.playerAudioPcm16.Length > 0;
-        bool isVoiceOnly = (req.eventName == "PlayerVoiceQuestion") && hasAudio && string.IsNullOrEmpty(req.playerUtterance);
+        bool isVoiceOnly = (req.eventName == "PlayerVoiceQuestion") && hasAudio;
 
         if (hasAudio)
             await SendAudioInputAsync(req.playerAudioPcm16);
@@ -406,9 +362,8 @@ You may also receive raw audio input from the player: treat it as what they just
         if (!isVoiceOnly)
         {
             string payloadText =
-                $"GAME_EVENT: {req.eventName}\n" +
-                $"PLAYER_UTTERANCE: {(string.IsNullOrEmpty(req.playerUtterance) ? "<none>" : req.playerUtterance)}\n";
-
+                $"GAME_EVENT: {req.eventName}\n";
+            
             await SendJsonAsync(new
             {
                 type = "conversation.item.create",
@@ -569,7 +524,6 @@ You may also receive raw audio input from the player: treat it as what they just
         var req = new PendingInstructorRequest
         {
             eventName = "PlayerVoiceQuestion",
-            playerUtterance = null,
             extraInstruction = extraInstruction,
             playerAudioPcm16 = playerAudioPcm16,
             enqueuedAt = Time.unscaledTime

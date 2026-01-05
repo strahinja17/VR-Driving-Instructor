@@ -55,7 +55,7 @@ public class LaneMonitor : MonoBehaviour
          if (zone.isExit)
         {
             inExitRegion = true;
-            Debug.Log("[LaneMonitor] Exit region of: " + boundLane.name != null ? boundLane.name : "null");
+            // Debug.Log("[LaneMonitor] Exit region of: " + boundLane !=null ? boundLane.name != null ? boundLane.name : "null" : "null");
         }
     }
 

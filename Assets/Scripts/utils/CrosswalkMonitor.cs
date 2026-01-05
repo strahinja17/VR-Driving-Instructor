@@ -27,12 +27,12 @@ public class CrosswalkMonitor : MonoBehaviour
 
         if (pedestriansInside > 0 && kmh > dangerSpeedKmh)
         {
-            SendAlert("Dangerous approach: pedestrian in crosswalk.");
+            SendAlert("Dangerous approach: pedestrian in crosswalk.", false);
             StudySessionManager.Instance.RegisterWarning("CrosswalkSpeed");
         }
 
         if (pedestriansInside > 0 && kmh < 6f)
-            SendAlert("Good job slowing for the pedestrian.");
+            SendAlert("Good job slowing for the pedestrian.", true);
 
     }
 
@@ -44,12 +44,12 @@ public class CrosswalkMonitor : MonoBehaviour
         }
     }
 
-    private void SendAlert(string msg)
+    private void SendAlert(string msg, bool ack)
     {
         if (debugLogs) Debug.Log($"[Crosswalk] {msg}");
 
         DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                            eventName: "CrosswalkZone",
+                            eventName: "CrosswalkZone" + (ack ? "Ack" : ""),
                             playerUtterance: null,
                             extraInstruction: $"React to message regarding crosswalk adhereance accordingly, and shortly: {msg}");
         

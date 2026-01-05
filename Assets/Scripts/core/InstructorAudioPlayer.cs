@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+using System.Threading;
 
 /// <summary>
 /// Streams AI instructor audio from DrivingAIInstructorHub into an AudioSource in realtime,
@@ -29,6 +31,27 @@ public class InstructorAudioPlayer : MonoBehaviour
     private int _outputSampleRate;
     private bool _isInitialized;
 
+    private bool _wasPlaying;
+    private float _lastNonZeroSampleTime;
+    [SerializeField] private float playbackEndSilenceSeconds = 0.12f;
+
+    [SerializeField] private float nonZeroThreshold = 0.0005f;
+
+    // Audio-thread clock (in output frames)
+    private long _audioFrameClock;     // total frames produced so far
+    private long _lastNonZeroFrame;    // frame index of last audible sample
+
+    private bool _speaking;                     // main thread speaking state
+    public event Action OnPlaybackFinished;     // optional
+    
+    [Header("Instructor Anim (AI playback-driven)")]
+    public InstructorHeadLook headOffset;
+    public InstructorMouthFlap_JawBone mouthFlap;
+
+    private bool _animSpeaking;
+
+
+
     private void Awake()
     {
         _audioSource = GetComponent<AudioSource>();
@@ -44,6 +67,15 @@ public class InstructorAudioPlayer : MonoBehaviour
         {
             _outputSampleRate = 48000; // fallback
         }
+
+        _audioFrameClock = 0;
+        _lastNonZeroFrame = long.MinValue;
+        _speaking = false;
+
+            
+        if (headOffset == null) headOffset = FindObjectOfType<InstructorHeadLook>(true);
+        if (mouthFlap == null) mouthFlap = FindObjectOfType<InstructorMouthFlap_JawBone>(true);
+
 
         _ringBufferSize = Mathf.Max(_outputSampleRate * bufferLengthSeconds, _outputSampleRate);
         _ringBuffer = new float[_ringBufferSize];
@@ -68,6 +100,42 @@ public class InstructorAudioPlayer : MonoBehaviour
 
         _isInitialized = true;
     }
+
+   private void Update()
+    {
+        if (!_isInitialized) return;
+
+        long lastNonZero = Interlocked.Read(ref _lastNonZeroFrame);
+        if (lastNonZero == long.MinValue)
+        {
+            // never played anything yet
+            return;
+        }
+
+        long nowFrame = Interlocked.Read(ref _audioFrameClock);
+        double secondsSinceAudible = (nowFrame - lastNonZero) / (double)_outputSampleRate;
+
+        bool audibleNow = secondsSinceAudible < playbackEndSilenceSeconds;
+
+        // Edge detect: silent -> audible (START)
+        if (!_animSpeaking && audibleNow)
+        {
+            _animSpeaking = true;
+            if (headOffset != null) headOffset.SetTalking(true);
+            if (mouthFlap != null) mouthFlap.SetTalking(true);
+        }
+        // Edge detect: audible -> silent (STOP)
+        else if (_animSpeaking && !audibleNow)
+        {
+            _animSpeaking = false;
+            if (headOffset != null) headOffset.SetTalking(false);
+            if (mouthFlap != null) mouthFlap.SetTalking(false);
+        }
+    }
+
+
+
+
 
     private Coroutine _subCoroutine;
 
@@ -163,6 +231,9 @@ public class InstructorAudioPlayer : MonoBehaviour
 
         int frames = data.Length / channels;
 
+        bool hadNonZero = false;
+
+
         lock (_lockObj)
         {
             for (int frame = 0; frame < frames; frame++)
@@ -181,12 +252,21 @@ public class InstructorAudioPlayer : MonoBehaviour
                     sample = 0f;
                 }
 
+                if (!hadNonZero && Mathf.Abs(sample) > nonZeroThreshold)
+                    hadNonZero = true;
+
                 // Copy mono sample to all channels (L, R, etc.)
                 for (int ch = 0; ch < channels; ch++)
                 {
                     data[frame * channels + ch] = sample;
                 }
+
+                Interlocked.Increment(ref _audioFrameClock);
+
             }
+
+            if (hadNonZero)
+                Interlocked.Exchange(ref _lastNonZeroFrame, _audioFrameClock);
         }
     }
 }

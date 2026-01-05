@@ -85,6 +85,9 @@ You will receive messages that contain:
     public event Action OnInstructorAudioResponseComplete;
     public event Action<string> OnInstructorError;
 
+    public InstructorAudioPlayer audioPlayer;
+
+
     // ----- Internal state -----
 
     private ClientWebSocket _socket;
@@ -125,6 +128,47 @@ You will receive messages that contain:
     // serialize socket sends
     private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
 
+    [Tooltip("Seconds to keep mouth/head active after audio.done (feels more natural).")]
+    [SerializeField] private float speechEndTailSeconds = 0.12f;
+
+    private bool _aiSpeaking;
+    private float _stopSpeakingAtUnscaled = -1f;
+
+    // AI speech state (hub-side)
+    private bool _responseAudioStartedThisTurn = false;
+
+    [SerializeField] private InstructorAnimationBundle animBundle;
+
+    [Header("Leniency (negative events)")]
+    [Tooltip("Count these events and only prompt AI after N occurrences.")]
+    [SerializeField] private List<string> countedNegativeEvents = new List<string>
+    {
+        "SpeedingWarning",
+        "Collision",
+        "LaneWarning",
+        "RedLightViolation",
+        "YieldSignZone",
+        "RedSignZone",
+        "CrosswalkZone"
+    };
+
+    [Tooltip("How many times the same negative event must occur before we actually notify the AI.")]
+    [SerializeField] private int violationsBeforePrompt = 2;
+
+    [Tooltip("Optional: seconds between counts for the SAME event (prevents counting every frame).")]
+    [SerializeField] private float minSecondsBetweenCountsSameEvent = 2f;
+
+    // internal counters
+    private readonly Dictionary<string, int> _negativeEventCounts = new Dictionary<string, int>();
+    private readonly Dictionary<string, float> _lastCountTimeByEvent = new Dictionary<string, float>();
+
+
+    private bool ShouldGateByLeniency(string eventName)
+    {
+        if (string.IsNullOrEmpty(eventName)) return false;
+        return countedNegativeEvents != null && countedNegativeEvents.Contains(eventName);
+    }
+
 
     // ===== Unity lifecycle =====
 
@@ -142,6 +186,10 @@ You will receive messages that contain:
     private async void Start()
     {
         _cts = new CancellationTokenSource();
+
+        if (animBundle == null)
+            animBundle = FindObjectOfType<InstructorAnimationBundle>(true);
+
         await ConnectAndInitializeAsync();
     }
 
@@ -252,7 +300,6 @@ You will receive messages that contain:
 
         if (now - _lastAnyEventTime < minSecondsBetweenAnyCalls && !isDirection)
         {
-            DebugLog($"Skipped event '{eventName}' due to global rate limit.");
             return;
         }
 
@@ -260,13 +307,40 @@ You will receive messages that contain:
         {
             if (now - lastTimeForThisEvent < minSecondsBetweenSameEvent)
             {
-                DebugLog($"Skipped event '{eventName}' due to per-event rate limit.");
                 return;
             }
         }
 
+        if (ShouldGateByLeniency(eventName))
+        {
+            // cooldown for counting (prevents frame-spam counts)
+            if (_lastCountTimeByEvent.TryGetValue(eventName, out float lastCount) &&
+                now - lastCount < minSecondsBetweenCountsSameEvent)
+            {
+                // don't count yet
+                return;
+            }
+
+            _lastCountTimeByEvent[eventName] = now;
+
+            // increment count
+            _negativeEventCounts.TryGetValue(eventName, out int count);
+            count++;
+            _negativeEventCounts[eventName] = count;
+
+            DebugLog($"[Leniency] {eventName} count = {count}/{violationsBeforePrompt}");
+
+            // if not enough yet, do NOT prompt AI
+            if (count < Mathf.Max(1, violationsBeforePrompt))
+                return;
+
+            // reached threshold: reset count so it must repeat again to prompt again
+            _negativeEventCounts[eventName] = 0;
+        }
+
         _lastAnyEventTime = now;
         _lastEventTimeByName[eventName] = now;
+
         // --- end rate limiting ---
 
         // enqueue
@@ -355,6 +429,24 @@ You will receive messages that contain:
         bool hasAudio = req.playerAudioPcm16 != null && req.playerAudioPcm16.Length > 0;
         bool isVoiceOnly = (req.eventName == "PlayerVoiceQuestion") && hasAudio;
 
+         EnqueueOnMainThread(() =>
+        {
+            if (animBundle == null) return;
+
+            // EXAMPLES — you fill the real event names
+            if (req.eventName == "SpeedingWarning" || req.eventName == "Collision" || req.eventName == "LaneWarning" || req.eventName == "RedLightViolation"
+                    || req.eventName == "YieldSignZone" || req.eventName == "RedSignZone" || req.eventName == "CrosswalkZone")
+            {
+                // palm up for warnings / instructions
+                animBundle.PlayGesture(InstructorAnimationBundle.GestureType.PalmUp);
+            }
+            else if (req.eventName == "YieldSignZoneAck" || req.eventName == "StopSignZoneAck" || req.eventName == "LaneChange" || req.eventName == "CrosswalkZoneAck")
+            {
+                // thumbs up for praise
+                animBundle.PlayGesture(InstructorAnimationBundle.GestureType.ThumbsUp);
+            }
+        });
+
         if (hasAudio)
             await SendAudioInputAsync(req.playerAudioPcm16);
 
@@ -378,6 +470,8 @@ You will receive messages that contain:
                 }
             });
         }
+
+        _responseAudioStartedThisTurn = false;
 
         await SendJsonAsync(new
         {
@@ -512,7 +606,7 @@ You will receive messages that contain:
     }
 
     public void NotifyPlayerVoiceOnly(byte[] playerAudioPcm16,
-        string extraInstruction = "Answer the player's question in 1–2 short sentences.")
+        string extraInstruction = "Answer the player's question in 1 short sentence.")
     {
         if (!_isConnected)
         {
@@ -541,7 +635,6 @@ You will receive messages that contain:
 
         EnsureQueuePumpRunning();
     }
-
 
     // ===== Handle server events =====
 
@@ -598,8 +691,9 @@ You will receive messages that contain:
                     try
                     {
                         byte[] audioBytes = Convert.FromBase64String(base64);
-                        EnqueueOnMainThread(() =>
-                            OnInstructorAudioChunk?.Invoke(audioBytes));
+                        EnqueueOnMainThread(() => {
+                            OnInstructorAudioChunk?.Invoke(audioBytes);
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -612,8 +706,9 @@ You will receive messages that contain:
             case "response.output_audio.done":
             case "response.audio.done":
             {
-                EnqueueOnMainThread(() =>
-                    OnInstructorAudioResponseComplete?.Invoke());
+                EnqueueOnMainThread(() => {
+                    OnInstructorAudioResponseComplete?.Invoke();
+                });
                 break;
             }
 

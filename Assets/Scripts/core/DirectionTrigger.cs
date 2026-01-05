@@ -10,10 +10,6 @@ public class DirectionTrigger : MonoBehaviour
     [Tooltip("If true, we require a TelemetryManager somewhere on the entering object or its parents.")]
     public bool requireTelemetryManager = true;
 
-    [Header("Audio Output (scripted clips)")]
-    [Tooltip("AudioSource used to play scripted direction clips (set spatialBlend=0 for 2D voice).")]
-    public AudioSource voiceSource;
-
     public AudioClip noAiDirectionClip;
 
     [TextArea(3, 8)]
@@ -34,9 +30,6 @@ public class DirectionTrigger : MonoBehaviour
     {
         if (instructorHub == null)
             instructorHub = FindObjectOfType<DrivingAIInstructorHub>();
-
-        if (voiceSource == null)
-            voiceSource = GetComponent<AudioSource>(); // optional convenience
     }
 
     private void OnTriggerEnter(Collider other)
@@ -58,11 +51,9 @@ public class DirectionTrigger : MonoBehaviour
 
         if (!aiMode)
         {
-            if (voiceSource != null && noAiDirectionClip != null)
+            if (noAiDirectionClip != null)
             {
-                voiceSource.Stop();
-                voiceSource.clip = noAiDirectionClip;
-                voiceSource.Play();
+                GlobalInstructorAudio.Play(noAiDirectionClip);
             }
         }
         else

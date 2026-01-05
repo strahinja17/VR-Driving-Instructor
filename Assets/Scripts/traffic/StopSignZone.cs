@@ -71,7 +71,7 @@ public class StopSignZone : MonoBehaviour
             if (AIMode) {
                 Debug.Log($"[StopSignZone] Alert: {successMessage}");
                 DrivingAIInstructorHub.Instance.NotifyDrivingEvent(
-                                eventName: "StopSignZone",
+                                eventName: "StopSignZoneAck",
                                 playerUtterance: null,
                                 extraInstruction: "Acknowledge properly stopping for stop sign, in very few words.");
             }

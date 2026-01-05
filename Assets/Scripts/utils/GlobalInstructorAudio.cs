@@ -44,6 +44,20 @@ public class GlobalInstructorAudio : MonoBehaviour
     // Track what was last started (not just last requested)
     private int _lastStartedClipId = -1;
 
+    [Header("Animation hooks")]
+    public InstructorMouthFlap_JawBone mouthFlap;
+    public InstructorGestureSimple gesture;
+
+    public InstructorHeadLook headTalkLook;
+
+    // Talking state tracking
+    private bool _talking = false;
+    private float _talkingEndTimeUnscaled;
+
+    // Optional: small tail so mouth doesn't snap shut instantly
+    [SerializeField] private float talkingTailSeconds = 0.05f;
+
+
     private void Awake()
     {
         if (_instance != null && _instance != this)
@@ -64,6 +78,17 @@ public class GlobalInstructorAudio : MonoBehaviour
                 audioSource.playOnAwake = false;
                 audioSource.spatialBlend = 0f; // 2D voice default
             }
+        }
+    }
+
+    private void Update()
+    {
+        if (!_talking) return;
+
+        // We use time instead of audioSource.isPlaying because PlayOneShot doesn't give a separate handle.
+        if (Time.unscaledTime >= _talkingEndTimeUnscaled)
+        {
+            EndTalking();
         }
     }
 
@@ -152,6 +177,8 @@ public class GlobalInstructorAudio : MonoBehaviour
             _instance.StopCoroutine(_instance._pumpRoutine);
             _instance._pumpRoutine = null;
         }
+
+        _instance.EndTalking();
     }
 
     public static bool IsPlaying()
@@ -188,6 +215,9 @@ public class GlobalInstructorAudio : MonoBehaviour
 
         _lastStartedClipId = clip.GetInstanceID();
         _nextAllowedStartTime = Time.unscaledTime + minSecondsBetweenStarts;
+
+        if (!_talking) BeginTalking(clip);
+        else ExtendTalking(clip);
     }
 
     private IEnumerator PumpQueue()
@@ -221,4 +251,42 @@ public class GlobalInstructorAudio : MonoBehaviour
 
         _pumpRoutine = null;
     }
+
+    private void BeginTalking(AudioClip clip)
+    {
+        _talking = true;
+        _talkingEndTimeUnscaled = Time.unscaledTime + (clip != null ? clip.length : 0f) + talkingTailSeconds;
+
+        if (mouthFlap != null) mouthFlap.SetTalking(true);
+
+        // Optional: gesture once per utterance
+        if (gesture != null) gesture.DoPalmUp();
+
+        if (headTalkLook != null)
+            headTalkLook.SetTalking(true);
+    }
+
+    private void ExtendTalking(AudioClip clip)
+    {
+        // If another clip starts while we're "talking", extend the end time
+        float end = Time.unscaledTime + (clip != null ? clip.length : 0f) + talkingTailSeconds;
+        if (end > _talkingEndTimeUnscaled) _talkingEndTimeUnscaled = end;
+
+        if (!_talking)
+        {
+            _talking = true;
+            if (mouthFlap != null) mouthFlap.SetTalking(true);
+            if (headTalkLook != null)
+                headTalkLook.SetTalking(true);  
+        }
+    }
+
+    private void EndTalking()
+    {
+        _talking = false;
+        if (mouthFlap != null) mouthFlap.SetTalking(false);
+        if (headTalkLook != null)
+            headTalkLook.SetTalking(false);
+    }
+
 }

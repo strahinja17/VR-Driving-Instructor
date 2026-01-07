@@ -6,16 +6,13 @@ public class AICarScenarioController : MonoBehaviour
     public AICarDriver_Scenario driver;
 
     [Header("Scenario")]
-    [Tooltip("Teleport car to this waypoint when scenario starts.")]
     public int spawnAtWaypointIndex = 0;
-
-    [Tooltip("Driver will stop and hold when it reaches this waypoint.")]
     public int stopAndWaitAtWaypointIndex = 1;
-
-    [Tooltip("Optional: if true, hide car before start (disable renderers).")]
+    public int stopAndWaitAtWaypointSecondIndex = 1;
     public bool startHidden = true;
 
     bool hasStarted = false;
+    public bool stopTwice = false;
 
     void Reset()
     {
@@ -25,11 +22,19 @@ public class AICarScenarioController : MonoBehaviour
     void Awake()
     {
         if (driver == null) driver = GetComponent<AICarDriver_Scenario>();
+        if (driver == null)
+        {
+            Debug.LogError($"[{name}] ScenarioController has no driver reference.");
+            enabled = false;
+            return;
+        }
 
-        if (startHidden)
-            SetVisible(false);
+        if (startHidden) SetVisible(false);
+    }
 
-        // keep driver paused until spawned
+    void Start()
+    {
+        // IMPORTANT: do this in Start so driver.Awake has definitely run
         if (driver != null)
             driver.SetPaused(true);
     }
@@ -41,12 +46,12 @@ public class AICarScenarioController : MonoBehaviour
 
         hasStarted = true;
 
+        Debug.Log($"[SCENARIO] StartScenario on {name} | spawn={spawnAtWaypointIndex} stop={stopAndWaitAtWaypointIndex}");
+
         SetVisible(true);
 
-        // Put on spawn waypoint and begin driving.
         driver.SnapToWaypoint(spawnAtWaypointIndex, faceNext: true);
         driver.SetStopAtWaypoint(stopAndWaitAtWaypointIndex);
-
         driver.SetPaused(false);
     }
 
@@ -54,15 +59,20 @@ public class AICarScenarioController : MonoBehaviour
     {
         if (driver == null) return;
 
-        // Let it continue past the hold point.
-        driver.ClearStopHold();
-        driver.SetPaused(false);
-    }
+        Debug.Log($"[SCENARIO] ReleaseFromStop on {name} | holding={driver.IsHoldingAtStopPoint()} idx={driver.CurrentWaypointIndex} paused={driver.Paused}");
 
-    public void ForceStopNow()
-    {
-        if (driver == null) return;
-        driver.SetPaused(true);
+        // This is the critical call (consumes stop waypoint if we were holding)
+        driver.ClearStopHoldConsumeAndGo();
+
+        driver.SetPaused(false);
+
+        // Optional: if player is near bumper / intersection proxy, grace period
+        driver.IgnoreSensorsFor(0.75f);
+
+        Debug.Log($"[SCENARIO] After release | holding={driver.IsHoldingAtStopPoint()} idx={driver.CurrentWaypointIndex} paused={driver.Paused}");
+        
+        if (stopTwice)
+            driver.SetStopAtWaypoint(stopAndWaitAtWaypointIndex);
     }
 
     void SetVisible(bool visible)

@@ -9,7 +9,7 @@ public class AICarScenarioStartTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        var telemetry = other.transform.root.GetComponent<TelemetryManager>();
+        var telemetry = other.GetComponentInParent<TelemetryManager>();
         if (telemetry == null) return;
 
         if (startOnce && didStart) return;

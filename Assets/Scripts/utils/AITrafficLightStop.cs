@@ -10,6 +10,6 @@ public class AITrafficLightStop : MonoBehaviour
         // adapt this to your actual API
         // e.g. if you have an enum:
         // return light.currentState == TrafficLightState.Red;
-        return light != null && light.redOn; 
+        return light != null && light.IsRed(); 
     }
 }

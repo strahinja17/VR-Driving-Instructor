@@ -67,4 +67,15 @@ public class TrafficLightController : MonoBehaviour
         if (greenRenderer != null)
             greenRenderer.sharedMaterial = (CurrentState == LightState.Green) ? greenOn : offMaterial;
     }
+
+    public bool IsRed()
+    {
+        if (CurrentState == LightState.Red || CurrentState == LightState.RedYellow)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+    }
 }

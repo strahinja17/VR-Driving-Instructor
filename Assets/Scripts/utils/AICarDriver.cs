@@ -190,23 +190,34 @@ public class AICarDriver : MonoBehaviour
         Vector3 dir = origin.forward;
 
         if (debugRays)
-        {
             Debug.DrawRay(start, dir * sensorLength, Color.cyan);
-        }
 
         if (Physics.Raycast(start, dir, out RaycastHit hit, sensorLength, obstacleLayers, QueryTriggerInteraction.Ignore))
         {
+            // Ignore self hits
+            if (hit.transform.root == transform.root)
+                return cruiseSpeed;
+
             float dist = hit.distance;
 
-            // 1) Traffic light stop proxy?
-            var tl = hit.collider.GetComponentInParent<AITrafficLightStop>();
-            if (tl != null && tl.IsRed())
+            // 1) Traffic stop sensor (AI_StopSensor box)
+            var tlStop = hit.collider.GetComponentInParent<AITrafficLightStop>();
+            if (tlStop != null)
             {
-                if (dist < stopForObstacleDistance * 1.5f)
-                    return 0f;
+                // DEBUG (optional)
+                // Debug.Log($"[AI] Hit StopSensor {hit.collider.name}, red={tlStop.IsRed()}, dist={dist:0.00}");
+
+                if (tlStop.IsRed())
+                {
+                    if (dist < stopForObstacleDistance * 1.5f)
+                        return 0f;
+                }
+
+                // Not red -> ignore this collider entirely (do NOT stop for it)
+                return cruiseSpeed;
             }
 
-            // 2) Player car (or any car with TelemetryManager on root)?
+            // 2) Player car (TelemetryManager on root)
             var telemetry = hit.collider.transform.root.GetComponent<TelemetryManager>();
             if (telemetry != null)
             {
@@ -214,13 +225,15 @@ public class AICarDriver : MonoBehaviour
                     return 0f;
             }
 
-            // 3) Generic obstacle
+            // 3) Generic obstacle (walls, props, etc.)
             if (dist < stopForObstacleDistance)
                 return 0f;
         }
 
         return cruiseSpeed;
     }
+
+
 
     static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
 

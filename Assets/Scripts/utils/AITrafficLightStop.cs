@@ -3,7 +3,7 @@ using UnityEngine;
 // Put this on a small trigger/collider at the stop line in front of a light
 public class AITrafficLightStop : MonoBehaviour
 {
-    public TrafficLightController light;  // your existing script
+    public new TrafficLightController light;  // your existing script
 
     public bool IsRed()
     {

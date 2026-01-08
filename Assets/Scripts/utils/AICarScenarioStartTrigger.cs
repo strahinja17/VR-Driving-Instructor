@@ -5,7 +5,7 @@ public class AICarScenarioStartTrigger : MonoBehaviour
     public AICarScenarioController scenario;
     public bool startOnce = true;
 
-    bool didStart = false;
+    new bool didStart = false;
 
     private void OnTriggerEnter(Collider other)
     {

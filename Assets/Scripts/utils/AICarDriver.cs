@@ -16,10 +16,10 @@ public class AICarDriver : MonoBehaviour
     [Tooltip("Cruise speed in m/s (10 m/s ≈ 36 km/h).")]
     public float cruiseSpeed = 12f;   // m/s
     public float accel = 4f;          // m/s^2
-    public float brake = 8f;          // m/s^2
+    public float brake = 12f;          // m/s^2
     public float turnSlerp = 12f;     // higher = faster turning
     public float stopDistance = 1.5f; // distance to switch waypoint
-    public float lookAhead = 3f;      // aim a bit past the waypoint
+    public float lookAhead = 4f;      // aim a bit past the waypoint
 
     [Header("Cornering")]
     [Tooltip("Below this angle (deg), car uses full cruiseSpeed.")]
@@ -36,7 +36,7 @@ public class AICarDriver : MonoBehaviour
     [Tooltip("Where the forward ray starts (e.g. an empty at the front bumper). If null, uses transform.")]
     public Transform sensorOrigin;
     [Tooltip("How far ahead the car looks for obstacles / lights.")]
-    public float sensorLength = 15f;
+    public float sensorLength = 20f;
     [Tooltip("Distance at which we commit to a full stop in front of an obstacle.")]
     public float stopForObstacleDistance = 6f;
     [Tooltip("Which layers should be considered obstacles (player, other cars, stop proxies, etc).")]
@@ -218,7 +218,7 @@ public class AICarDriver : MonoBehaviour
             }
 
             // 2) Player car (TelemetryManager on root)
-            var telemetry = hit.collider.transform.root.GetComponent<TelemetryManager>();
+            var telemetry = hit.collider.GetComponentInParent<TelemetryManager>();
             if (telemetry != null)
             {
                 if (dist < stopForObstacleDistance)

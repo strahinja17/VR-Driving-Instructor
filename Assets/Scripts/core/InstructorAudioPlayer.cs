@@ -31,8 +31,6 @@ public class InstructorAudioPlayer : MonoBehaviour
     private int _outputSampleRate;
     private bool _isInitialized;
 
-    private bool _wasPlaying;
-    private float _lastNonZeroSampleTime;
     [SerializeField] private float playbackEndSilenceSeconds = 0.12f;
 
     [SerializeField] private float nonZeroThreshold = 0.0005f;
@@ -41,16 +39,12 @@ public class InstructorAudioPlayer : MonoBehaviour
     private long _audioFrameClock;     // total frames produced so far
     private long _lastNonZeroFrame;    // frame index of last audible sample
 
-    private bool _speaking;                     // main thread speaking state
-    public event Action OnPlaybackFinished;     // optional
     
     [Header("Instructor Anim (AI playback-driven)")]
     public InstructorHeadLook headOffset;
     public InstructorMouthFlap_JawBone mouthFlap;
 
     private bool _animSpeaking;
-
-
 
     private void Awake()
     {
@@ -70,11 +64,9 @@ public class InstructorAudioPlayer : MonoBehaviour
 
         _audioFrameClock = 0;
         _lastNonZeroFrame = long.MinValue;
-        _speaking = false;
-
             
-        if (headOffset == null) headOffset = FindObjectOfType<InstructorHeadLook>(true);
-        if (mouthFlap == null) mouthFlap = FindObjectOfType<InstructorMouthFlap_JawBone>(true);
+        if (headOffset == null) headOffset = FindFirstObjectByType<InstructorHeadLook>();
+        if (mouthFlap == null) mouthFlap = FindFirstObjectByType<InstructorMouthFlap_JawBone>();
 
 
         _ringBufferSize = Mathf.Max(_outputSampleRate * bufferLengthSeconds, _outputSampleRate);
@@ -132,9 +124,6 @@ public class InstructorAudioPlayer : MonoBehaviour
             if (mouthFlap != null) mouthFlap.SetTalking(false);
         }
     }
-
-
-
 
 
     private Coroutine _subCoroutine;

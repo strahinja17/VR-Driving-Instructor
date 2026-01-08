@@ -303,7 +303,7 @@ public class AICarDriver_Scenario : MonoBehaviour
             }
 
             // 2) Player car (TelemetryManager on root)
-            var telemetry = hit.collider.transform.root.GetComponent<TelemetryManager>();
+            var telemetry = hit.collider.GetComponentInParent<TelemetryManager>();
             if (telemetry != null)
             {
                 if (dist < stopForObstacleDistance)

@@ -9,18 +9,23 @@ public class MicInputToInstructor : MonoBehaviour
     [Header("Mic")]
     [Tooltip("Leave empty for default microphone.")]
     public string micDeviceName = "";
-    public int micSampleRate = 48000;     // common on Windows; we will resample to 16000
-    public int targetSampleRate = 16000;  // MUST match hub input_audio_format sample rate
+
+    [Tooltip("Use 16000 if possible to avoid resampling.")]
+    public int micSampleRate = 16000;
+
+    public int targetSampleRate = 16000;
     public int maxRecordSeconds = 10;
 
     [Header("Push-to-talk")]
     public KeyCode pushToTalkKey = KeyCode.V;
 
-    [Tooltip("If true, auto-send when user releases key. If false, you must call SendNow().")]
+    [Tooltip("If true, auto-send when user releases key.")]
     public bool sendOnRelease = true;
 
+    [Header("Send window")]
+    [Range(0.5f, 8f)] public float sendLastSeconds = 3.5f;
+
     [Header("Level gate")]
-    [Tooltip("Skip sending if mic is basically silent.")]
     public float rmsSilenceThreshold = 0.01f;
 
     [Header("Prompt")]
@@ -29,8 +34,12 @@ public class MicInputToInstructor : MonoBehaviour
 
     private AudioClip _clip;
     private bool _recording;
-    private int _startSamplePos;
     private string _device;
+
+    [Header("Optional: CarInputHub PTT")]
+    public CarInputHub inputHub;
+
+    private bool _prevPTTHeld;
 
     private void Awake()
     {
@@ -44,97 +53,85 @@ public class MicInputToInstructor : MonoBehaviour
         if (string.IsNullOrEmpty(_device))
         {
             Debug.LogWarning("[MicInputToInstructor] No microphone found.");
+            return;
         }
-        else
-        {
-            Debug.Log("[MicInputToInstructor] Using mic: " + _device);
-        }
+
+        Debug.Log("[MicInputToInstructor] Using mic: " + _device);
+
+        // START MIC ONCE (prevents press hitch)
+        _clip = Microphone.Start(_device, loop: true, lengthSec: maxRecordSeconds, frequency: micSampleRate);
+
+        Debug.Log("[MicInputToInstructor] Mic started (always-on).");
+    }
+
+    private void OnDestroy()
+    {
+        if (!string.IsNullOrEmpty(_device))
+            Microphone.End(_device);
     }
 
     private void Update()
     {
-        if (string.IsNullOrEmpty(_device) || hub == null) return;
+        if (string.IsNullOrEmpty(_device) || hub == null || _clip == null) return;
 
-        if (Input.GetKeyDown(pushToTalkKey))
-            BeginRecording();
+        bool wheelHeld = (inputHub != null) && inputHub.PushToTalkHeld;
+        bool keyHeld = Input.GetKey(pushToTalkKey);
+        bool heldNow = wheelHeld || keyHeld;
 
-        if (Input.GetKeyUp(pushToTalkKey))
+        if (heldNow)
+        {
+            _recording = true;
+            // (optional) Debug.Log("[MicInputToInstructor] PTT down");
+        }
+
+        if (_recording && !heldNow)
         {
             if (sendOnRelease)
-                EndRecordingAndSend();
-            else
-                EndRecordingKeepBuffer();
+                EndRecordingAndSend_FromRunningMic();
+            _recording = false;
         }
     }
 
-    public void BeginRecording()
+    private void EndRecordingAndSend_FromRunningMic()
     {
-        if (_recording) return;
-        if (string.IsNullOrEmpty(_device)) return;
-
-        // Create a looping clip so we can read from it reliably
-        _clip = Microphone.Start(_device, loop: true, lengthSec: maxRecordSeconds, frequency: micSampleRate);
-        _recording = true;
-
-        // Wait a tiny bit for mic to start; sample position can be 0 initially
-        _startSamplePos = 0;
-
-        Debug.Log("[MicInputToInstructor] Recording started.");
-    }
-
-    public void EndRecordingKeepBuffer()
-    {
-        if (!_recording) return;
-        _recording = false;
-
         int endPos = Microphone.GetPosition(_device);
-        Microphone.End(_device);
-
-        Debug.Log("[MicInputToInstructor] Recording ended (not sent). Samples: " + endPos);
-        // You could store the audio here if you want manual send later.
-    }
-
-    public void EndRecordingAndSend()
-    {
-        if (!_recording) return;
-        _recording = false;
-
-        int endPos = Microphone.GetPosition(_device);
-        Microphone.End(_device);
-
-        if (_clip == null || endPos <= 0)
+        if (endPos <= 0)
         {
-            Debug.LogWarning("[MicInputToInstructor] No audio captured.");
+            Debug.LogWarning("[MicInputToInstructor] Mic position is 0.");
             return;
         }
 
-        // Pull samples out of the clip (mono)
-        float[] samples = ReadSamples(_clip, endPos);
+        int freq = _clip.frequency;
+        int channels = _clip.channels;
 
-        if (samples == null || samples.Length < targetSampleRate / 10)
+        int sendSamples = Mathf.Clamp(
+            Mathf.RoundToInt(sendLastSeconds * freq),
+            1,
+            _clip.samples
+        );
+
+        // Read last window from looping buffer
+        float[] mono = ReadLastSamplesMono(_clip, endPos, sendSamples, channels);
+        if (mono == null || mono.Length < targetSampleRate / 10)
         {
             Debug.LogWarning("[MicInputToInstructor] Too little audio captured.");
             return;
         }
 
-        // Silence gate
-        float rms = ComputeRms(samples);
+        float rms = ComputeRms(mono);
         if (rms < rmsSilenceThreshold)
         {
-            Debug.Log("[MicInputToInstructor] Not sending: looks like silence (rms=" + rms.ToString("F4") + ")");
+            Debug.Log($"[MicInputToInstructor] Not sending: silence (rms={rms:F4})");
             return;
         }
 
-        // Resample to 16k
-        float[] resampled = ResampleLinear(samples, micSampleRate, targetSampleRate);
+        // Resample only if needed
+        float[] resampled = (freq == targetSampleRate) ? mono : ResampleLinear(mono, freq, targetSampleRate);
 
-        // Convert to PCM16
         byte[] pcm16 = DrivingAIInstructorHub.ConvertFloatToPcm16(resampled);
-
-        // Send to hub
         hub.NotifyPlayerVoiceOnly(pcm16, extraInstruction);
 
-        Debug.Log($"[MicInputToInstructor] Sent mic audio. rawSamples={samples.Length} resampled={resampled.Length}");
+        Debug.Log($"[MicInputToInstructor] Sent last {sendLastSeconds:F1}s (freq {freq} -> {targetSampleRate})");
     }
 
     private string ResolveDevice()
@@ -148,31 +145,55 @@ public class MicInputToInstructor : MonoBehaviour
         return null;
     }
 
-    private float[] ReadSamples(AudioClip clip, int sampleCount)
+    /// <summary>
+    /// Reads the LAST 'count' samples ending at endPos from a looping AudioClip and returns mono.
+    /// endPos is in samples per channel.
+    /// </summary>
+    private float[] ReadLastSamplesMono(AudioClip clip, int endPos, int count, int channels)
     {
         try
         {
-            // AudioClip.GetData expects length in samples * channels.
-            int channels = clip.channels;
-            float[] data = new float[sampleCount * channels];
-            clip.GetData(data, 0);
+            int bufferLen = clip.samples; // per channel
+            count = Mathf.Min(count, bufferLen);
 
-            if (channels == 1) return data;
+            int startPos = endPos - count;
+            if (startPos < 0) startPos += bufferLen;
 
-            // Downmix to mono
-            float[] mono = new float[sampleCount];
-            for (int i = 0; i < sampleCount; i++)
+            float[] interleaved = new float[count * channels];
+
+            if (startPos + count <= bufferLen)
+            {
+                clip.GetData(interleaved, startPos);
+            }
+            else
+            {
+                int tailCount = bufferLen - startPos;
+                float[] tail = new float[tailCount * channels];
+                float[] head = new float[(count - tailCount) * channels];
+
+                clip.GetData(tail, startPos);
+                clip.GetData(head, 0);
+
+                Buffer.BlockCopy(tail, 0, interleaved, 0, tail.Length * sizeof(float));
+                Buffer.BlockCopy(head, 0, interleaved, tail.Length * sizeof(float), head.Length * sizeof(float));
+            }
+
+            if (channels == 1) return interleaved;
+
+            float[] mono = new float[count];
+            for (int i = 0; i < count; i++)
             {
                 float sum = 0f;
+                int baseIdx = i * channels;
                 for (int ch = 0; ch < channels; ch++)
-                    sum += data[i * channels + ch];
+                    sum += interleaved[baseIdx + ch];
                 mono[i] = sum / channels;
             }
             return mono;
         }
         catch (Exception e)
         {
-            Debug.LogError("[MicInputToInstructor] ReadSamples failed: " + e);
+            Debug.LogError("[MicInputToInstructor] ReadLastSamplesMono failed: " + e);
             return null;
         }
     }
@@ -185,9 +206,6 @@ public class MicInputToInstructor : MonoBehaviour
         return (float)Math.Sqrt(sum / Math.Max(1, samples.Length));
     }
 
-    /// <summary>
-    /// Simple linear resampler (good enough for voice).
-    /// </summary>
     private static float[] ResampleLinear(float[] input, int inRate, int outRate)
     {
         if (inRate == outRate) return input;

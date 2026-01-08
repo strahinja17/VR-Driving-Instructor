@@ -15,14 +15,29 @@ public class SpeedLimitZone : MonoBehaviour
 
     public AudioClip limitChange;
 
+    private Transform playerRoot;
+
     void Start()
     {
         AIMode = StudyConditionManager.Instance.IsAIEnabled;
+
+        if (telemetryManager != null)
+            playerRoot = telemetryManager.transform.root;
+    }
+
+    private bool IsPlayer(Collider other)
+    {
+        if (telemetryManager == null || playerRoot == null)
+            return false;
+
+        return other.transform.root == playerRoot;
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (telemetryManager == null) return;
+
+        if (!IsPlayer(other)) return;
 
         // Send warning BEFORE the change
         // telemetryManager.SendInstructorAlert(alertMessage);
@@ -42,6 +57,8 @@ public class SpeedLimitZone : MonoBehaviour
     private void OnTriggerExit(Collider other)
     {
         if (telemetryManager == null) return;
+
+        if (!IsPlayer(other)) return;
 
         // Apply the speed limit AFTER the buffer zone
         telemetryManager.speedLimit = newSpeedLimit;

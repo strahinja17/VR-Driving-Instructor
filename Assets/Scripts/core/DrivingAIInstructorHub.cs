@@ -30,10 +30,6 @@ public class DrivingAIInstructorHub : MonoBehaviour
     [Tooltip("Voice name, e.g. alloy, verse, ember")]
     [SerializeField] private string voice = "echo";
 
-    [Header("Audio Settings")]
-    [Tooltip("Sample rate of PCM16 audio you send as input (must match your mic capture).")]
-    [SerializeField] private int inputSampleRate = 16000;
-
     [Tooltip("Sample rate of PCM16 audio you expect from the model (alloy is often 24000).")]
     [SerializeField] private int outputSampleRate = 24000;
     public int OutputSampleRate => outputSampleRate;
@@ -51,31 +47,35 @@ public class DrivingAIInstructorHub : MonoBehaviour
 You are an in-car VR driving instructor in a training simulator.
 
 Goals:
-- Keep the driver safe and calm.
 - Explain mistakes clearly but briefly.
-- Adapt feedback to their current context.
+- Adapt feedback to their current context and previos actions.
 - Prioritize safety-critical issues over minor optimizations.
-- Adopt the persona of the driving instructor. Be more natural and unforced, NOT robotic.
+- Adopt the persona of the driving instructor. Be more natural, unforced, and supportive.
 - NEVER say things that an AI would say, like 'If you need further assistance let me know..', DON'T ANNOUNCE SENTENCES WITH 'WARNING'!
-- Use the fact that you're an LLM and have the entire convo as context, when you see a pattern or something that can be inferred from the conversation, mention it briefly.
 
 Rules:
-- Respond in short 1 sentence bursts unless explicitly asked for a detailed explanation. This is a hard limit!! You can only speak for 5-8 seconds!!
-- Speak in the first person to the player (reffer to player with 'you'), not third person.
+- Respond with a single short sentence, since the player is driving and new events come fast. This is a hard limit!
+- Speak in the first person to the player (reffer to player with 'you').
 - Never mention that you are an AI or a language model.
-- If the situation indicates imminent danger, be firm and immediate.
-- Directions are ABSOLUTE! NEVER MAKE UP DIRECTIONS OR DISTANCES, READ THEM FROM THE PROMPT VERBATIM!
-- DON'T USE THE WORD 'WARNING' OR 'DIRECTION', WHEN ANOUNCING SOMETHING IN A SENTENCE! 
+- DIRECTIONS ARE ABSOLUTE! NEVER MAKE UP DIRECTIONS OR DISTANCES, READ THEM FROM THE *LAST* PROMPT VERBATIM!
+- DON'T USE THE WORD 'WARNING' OR 'DIRECTION' OR 'ACKNOWLIDGED', WHEN ANOUNCING SOMETHING IN A SENTENCE! 
 
 Input format:
 You will receive messages that contain:
 - GAME_EVENT: <eventName>
 - If you recieve an audio input file, treat it as the player saying something. Repeat back the question, and answer. If unclear, ask the player to repeat.
-- You may also receive raw audio input from the player: treat it as what they just said.
+- You may also receive raw audio input from the player: treat it as what they just said. If asked where the player should go, always look to the last prompt with directions given.
 ";
 
     [Header("Debug")]
-    public bool logDebugMessages = true;
+    public bool logDebugMessages = false;
+
+    [Header("Directions memory (persist across resets)")]
+    [TextArea(4, 10)]
+    [SerializeField] private string lastDirectionPrompt = ""; // saved "direction" context
+
+    public string LastDirectionPrompt => lastDirectionPrompt;
+
 
     // ----- Public events -----
 
@@ -128,15 +128,6 @@ You will receive messages that contain:
     // serialize socket sends
     private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
 
-    [Tooltip("Seconds to keep mouth/head active after audio.done (feels more natural).")]
-    [SerializeField] private float speechEndTailSeconds = 0.12f;
-
-    private bool _aiSpeaking;
-    private float _stopSpeakingAtUnscaled = -1f;
-
-    // AI speech state (hub-side)
-    private bool _responseAudioStartedThisTurn = false;
-
     [SerializeField] private InstructorAnimationBundle animBundle;
 
     [Header("Leniency (negative events)")]
@@ -169,6 +160,17 @@ You will receive messages that contain:
         return countedNegativeEvents != null && countedNegativeEvents.Contains(eventName);
     }
 
+    private string BuildSessionInstructions()
+    {
+        if (string.IsNullOrWhiteSpace(lastDirectionPrompt))
+            return baseSystemPrompt;
+
+        // The model will treat session.instructions as your system prompt.
+        return baseSystemPrompt
+            + "\n\n--- CURRENT ROUTE DIRECTIONS (VERBATIM, DO NOT INVENT) ---\n"
+            + lastDirectionPrompt.Trim()
+            + "\n--- END DIRECTIONS ---\n";
+    }
 
     // ===== Unity lifecycle =====
 
@@ -188,7 +190,7 @@ You will receive messages that contain:
         _cts = new CancellationTokenSource();
 
         if (animBundle == null)
-            animBundle = FindObjectOfType<InstructorAnimationBundle>(true);
+            animBundle = FindFirstObjectByType<InstructorAnimationBundle>();
 
         await ConnectAndInitializeAsync();
     }
@@ -253,7 +255,7 @@ You will receive messages that contain:
                 type = "session.update",
                 session = new
                 {
-                    instructions = baseSystemPrompt,
+                    instructions = BuildSessionInstructions(),
                     modalities = new[] { "text", "audio" },
                     input_audio_format = "pcm16",
                     output_audio_format = "pcm16",
@@ -297,6 +299,11 @@ You will receive messages that contain:
         // --- rate limiting (same as yours) ---
         float now = Time.unscaledTime;
         bool isDirection = eventName == "Directions";
+
+        if (isDirection && !string.IsNullOrWhiteSpace(extraInstruction))
+        {
+            lastDirectionPrompt = extraInstruction;
+        }
 
         if (now - _lastAnyEventTime < minSecondsBetweenAnyCalls && !isDirection)
         {
@@ -471,8 +478,6 @@ You will receive messages that contain:
             });
         }
 
-        _responseAudioStartedThisTurn = false;
-
         await SendJsonAsync(new
         {
             type = "response.create",
@@ -489,6 +494,77 @@ You will receive messages that contain:
 
         _currentTextResponse.Clear();
     }
+
+    public void ResetInstructorHard(bool resendDirections = true)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                DebugLog("[RESET] Hard reset requested.");
+
+                // Stop queue pump and any in-flight response
+                lock (_queueLock)
+                {
+                    _requestQueue.Clear();
+                }
+
+                _responseInFlight = false;
+                _responseDoneTcs?.TrySetResult(true);
+                _responseDoneTcs = null;
+
+                // Reset rate limiting + counters
+                _lastEventTimeByName.Clear();
+                _lastAnyEventTime = -999f;
+
+                _negativeEventCounts.Clear();
+                _lastCountTimeByEvent.Clear();
+
+                _currentTextResponse.Clear();
+
+                // Shut down existing socket + loops
+                try { _cts?.Cancel(); } catch { }
+
+                if (_socket != null)
+                {
+                    try
+                    {
+                        if (_socket.State == WebSocketState.Open || _socket.State == WebSocketState.CloseReceived)
+                        {
+                            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Instructor reset", CancellationToken.None);
+                        }
+                    }
+                    catch { /* ignore */ }
+
+                    try { _socket.Dispose(); } catch { /* ignore */ }
+                    _socket = null;
+                }
+
+                _isConnected = false;
+
+                // Create fresh CTS and reconnect
+                _cts = new CancellationTokenSource();
+                await ConnectAndInitializeAsync();
+
+                // If you want to force resend directions after connect:
+                // Not strictly required because BuildSessionInstructions already injects lastDirectionPrompt.
+                if (resendDirections && !string.IsNullOrWhiteSpace(lastDirectionPrompt))
+                {
+                    // Send one explicit "Directions" event so it becomes the most recent conversational item too.
+                    // This helps if the model relies on message recency, not just session instructions.
+                    NotifyDrivingEvent("Directions", extraInstruction: lastDirectionPrompt);
+                }
+
+                DebugLog("[RESET] Hard reset complete.");
+            }
+            catch (Exception ex)
+            {
+                DebugLog("[RESET] Failed: " + ex);
+                EnqueueOnMainThread(() => OnInstructorError?.Invoke("Reset failed: " + ex.Message));
+            }
+        });
+    }
+
 
 
     // ===== Audio input to Realtime =====
@@ -637,9 +713,6 @@ You will receive messages that contain:
     }
 
     // ===== Handle server events =====
-
-    private readonly StringBuilder _currentTranscript = new StringBuilder();
-    public event Action<string> OnMicTranscript;
 
     private void HandleServerEvent(string messageStr)
     {

@@ -29,7 +29,7 @@ public class DirectionTrigger : MonoBehaviour
     private void Awake()
     {
         if (instructorHub == null)
-            instructorHub = FindObjectOfType<DrivingAIInstructorHub>();
+            instructorHub = FindFirstObjectByType<DrivingAIInstructorHub>();
     }
 
     private void OnTriggerEnter(Collider other)

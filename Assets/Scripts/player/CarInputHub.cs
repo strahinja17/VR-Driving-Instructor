@@ -27,6 +27,11 @@ public class CarInputHub : MonoBehaviour
     private DrivingControlls controls;
     private CarBlinkers blinkers;
 
+    public bool PushToTalkHeld { get; private set; }   // true while held
+    public bool PushToTalkPressedThisFrame { get; private set; }  // edge
+    public bool PushToTalkReleasedThisFrame { get; private set; } // edge
+
+
     private void Awake()
     {
         controls = new DrivingControlls();
@@ -117,6 +122,13 @@ public class CarInputHub : MonoBehaviour
 
         if (controls.Driving.BlinkerRight.WasPressedThisFrame())
             blinkers?.ToggleRight();
+
+        // Push-to-talk
+        bool held = controls.Driving.PushToTalk.IsPressed();
+
+        PushToTalkPressedThisFrame = held && !PushToTalkHeld;
+        PushToTalkReleasedThisFrame = !held && PushToTalkHeld;
+        PushToTalkHeld = held;
 
         // --- Optional keyboard fallback ---
         if (keyboardFallback)

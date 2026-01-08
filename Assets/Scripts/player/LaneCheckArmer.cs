@@ -29,13 +29,10 @@ public class LaneChangeCheckArmer : MonoBehaviour
     private bool _mirrorDone;
     private bool _shoulderDone;
 
-    // prevents multiple scoring within one blinker session (optional)
-    private bool _evaluatedThisSession;
-
     private void Awake()
     {
         if (blinkers == null) blinkers = GetComponent<CarBlinkers>();
-        if (gaze == null) gaze = FindObjectOfType<GazeCheckManager>();
+        if (gaze == null) gaze = FindFirstObjectByType<GazeCheckManager>();
     }
 
     private void Update()
@@ -55,7 +52,6 @@ public class LaneChangeCheckArmer : MonoBehaviour
             _armedAt = Time.time;
             _mirrorDone = false;
             _shoulderDone = false;
-            _evaluatedThisSession = false;
 
             if (debugLogs) Debug.Log($"[LaneChangeCheckArmer] State => {_state}");
         }
@@ -106,9 +102,6 @@ public class LaneChangeCheckArmer : MonoBehaviour
 
         bool passed = mirrorOk && shoulderOk;
 
-        // Mark evaluated so you don’t spam-check multiple frames in same lane-change contact
-        _evaluatedThisSession = true;
-
         return (passed, !mirrorOk, !shoulderOk);
     }
 
@@ -118,7 +111,6 @@ public class LaneChangeCheckArmer : MonoBehaviour
         // Keep blinkers as the truth; we reset flags so the next lane change needs checks again
         _mirrorDone = false;
         _shoulderDone = false;
-        _evaluatedThisSession = false;
         _armedAt = Time.time;
     }
 }
